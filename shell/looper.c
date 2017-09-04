@@ -1,4 +1,4 @@
-#include <yash.h>
+#include "yash.h"
 
 
 int main(int argc, char *argv[]) {
