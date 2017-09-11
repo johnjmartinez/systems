@@ -95,7 +95,7 @@ int main(int argc, char **argv)
         else
         {
 			// If there is something there...
-            printf("The command read was s", line);
+            printf("The command read was %s", line);
             printf("\n");
             char *newLine = strchr(line, '\n');
             

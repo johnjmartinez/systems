@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     char line[LINE_MAX];
     char * _tokens[LINE_MAX/3];
     
-    signal(SIGINT,  sgnl_catcher);   // catch ctrl+c
+    signal(SIGINT,  sgnl_catcher);  // catch ctrl+c
     signal(SIGTSTP, sgnl_catcher);  // catch ctrl+z
 
     while(1) {
