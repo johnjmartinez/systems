@@ -1,3 +1,6 @@
 *.o
 *.out
 *tmp*
+yash
+_*
+apue*
