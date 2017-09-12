@@ -1,4 +1,4 @@
-#!bash
+#!/bin/bash
 
 # OBSERVATIONS
  + Child does NOT inherit signals handlers

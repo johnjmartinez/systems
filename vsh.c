@@ -17,8 +17,7 @@
 #define TOK_BUFSIZE 64
 #define TOK_DELIM " \t\r\n\a"
 
-char **split_line(char *line)
-{
+char **split_line(char *line) {
     int bufsize = TOK_BUFSIZE, position = 0;
     char **tokens = malloc(bufsize * sizeof(char*));
     char *token, **tokens_backup;
@@ -51,8 +50,7 @@ char **split_line(char *line)
 	return tokens;
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	int finish = 0;
 	char *user = getenv("USER");
 	char hostname[1024];
@@ -72,8 +70,7 @@ int main(int argc, char **argv)
 	
 	gethostname(hostname, 1024);
 	
-    while (!finish)
-    {
+    while (!finish) {
 		// Update 'pwd' variable
 		pwd = getenv("PWD");
 		// Print out prompt
@@ -86,29 +83,25 @@ int main(int argc, char **argv)
         printf(" $ ");
         fflush(stdout);
         
-        if(NULL == fgets(line, sizeof line, stdin))
-        {
+        if(NULL == fgets(line, sizeof line, stdin)) {
 			// If NULL, leave vsh
             finish = 1;
             printf("\nLeaving vsh\n");
         }
-        else
-        {
+        else {
 			// If there is something there...
             printf("The command read was %s", line);
             printf("\n");
             char *newLine = strchr(line, '\n');
             
-            if(newLine != NULL)
-            {
+            if(newLine != NULL) {
                 *newLine = '\0';
                 strcpy(lineCopy, line);
             }
             
             command = strchr(line, ' ');
             
-            if(command != NULL)
-            {
+            if(command != NULL) {
                 *command++ = '\0';
                 printf("Command= _%s_\n\n", line);                
             }
@@ -118,31 +111,24 @@ int main(int argc, char **argv)
             if(strcmp(line, "") == 0) {
 				fprintf(stderr, "vsh: Expected command\n");
 			}
-            else if(strcmp(line, "cd") == 0)
-            {
+            else if(strcmp(line, "cd") == 0) {
 				printf("cd not available in BETA versions of vsh");
 			}
-            else if(strcmp(line,"programmer") == 0)
-            {
+            else if(strcmp(line,"programmer") == 0) {
                 printf("The programmer of vsh is George Gibson\n");
             }
-            else if(strcmp(line,"ver") == 0)
-            {
+            else if(strcmp(line,"ver") == 0) {
                 printf("The current version is 1.0\n");
             }
-            else if(strcmp(line, "help") == 0)
-            {
+            else if(strcmp(line, "help") == 0) {
 				printf("Help for vsh\n\nType a command to run it. The builtin commands are : cd, programmer, ver, help and exit.Their functions are as follows:\n\ncd: Change Directory. Changes the current working directory.\n\nprogrammer: Display the programmers of vsh.\n\nver: Display the version of vsh you are running.\n\nhelp: Launches this program.\n\nexit: Leave vsh Shell.\n\nThese are the only builtins in vsh, but note that if you define a command in /bin with one of these names, your program will not run in vsh unless you use it's explicit name (/bin/yourprogram) rather than \"yourprogram\". vsh 1.0 written and programmed by George Gibson.\n");
 			}
-            else if(strcmp(line,"exit") == 0)
-			{
+            else if(strcmp(line,"exit") == 0) {
 				finish = 1;
 				printf("\nLeaving vsh...\n");
 				getchar();
 			}
-            else
-            {
-				// Run the command
+            else {  // Run the command
                 pid_t pid;
 				int err;
 
