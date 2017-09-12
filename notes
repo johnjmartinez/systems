@@ -14,7 +14,7 @@
  - jobs : only token in line?
  - & : last token in line ALWAYS, only one -- !wait for job completion
  - | : only one in line separates two commands 
- 
+ use boolean flag for each and check invalid combination cases
  
 # BEHAVIOR 
  * after read line check if any job exited ... print to STDOUT if so
