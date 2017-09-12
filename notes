@@ -1,0 +1,28 @@
+#!bash
+
+# OBSERVATIONS
+ + Child does NOT inherit signals handlers
+ + Child inherits ENV 
+ + GNU99 C CODE
+ 
+# BUILTINS
+ - fg : only token in line? --- wait for job completion
+ - bg : only token in line? -- !wait for job completion 
+ - > : followed by file, redirect STDOUT
+ - < : followed by file, redirect STDIN. FAIL if !exist
+ - cd : first of only two tokens in line, followed by dir
+ - jobs : only token in line?
+ - & : last token in line ALWAYS, only one -- !wait for job completion
+ - | : only one in line separates two commands 
+ 
+ 
+# BEHAVIOR 
+ * after read line check if any job exited ... print to STDOUT if so
+ * two commands max (if not using |, only one) per job
+ * no STDERR redirects?
+ * command + args + redirects if any 
+ 
+# NOT SURE
+ % implement + integrate job control table
+ % SIGCHLD, SIGCONT? ... SIGTTIN? SIGTTOU? 
+ % tcsetpgrp() ... setpgid() ... 
