@@ -9,8 +9,10 @@ void ChildHandler (int sig, siginfo_t *sip, void *notused) {
     fflush (stdout);
     status = 0;
     
-    if (sip->si_pid == waitpid (sip->si_pid, &status, WNOHANG)) { /* WNOHANG flag means if no news, don't wait*/
-        if (WIFEXITED(status)|| WTERMSIG(status)) /* SIGCHLD doesn't necessarily mean death - quick check */
+    /* WNOHANG flag means if no news, don't wait*/
+    if (sip->si_pid == waitpid (sip->si_pid, &status, WNOHANG)) { 
+        /* SIGCHLD doesn't necessarily mean death - quick check */
+        if (WIFEXITED(status)|| WTERMSIG(status)) 
             printf ("Child is gone\n"); /* dead */
         else
             printf ("ALIVE\n"); /* alive */

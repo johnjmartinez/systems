@@ -66,11 +66,11 @@ int main(void) {
             int count = 0;
 
             while (count < 2) {
-                pid = waitpid(-1, &status, WUNTRACED | WCONTINUED); // check if child has been stopped(WUNTRACED) or continued(WCONTINUED)
-                
+                pid = waitpid(-1, &status, WUNTRACED | WCONTINUED); 
+                // check if child has been stopped(WUNTRACED) or continued(WCONTINUED)
                 // wait does not take options: waitpid(-1,&status,0) is same as wait(&status)
-                //  waitpid w/ no options: waits only for terminated child processes
-                //  waitpid w/ options: able to specify responses to other changes in child's status
+                //  waitpid w/o optns: waits only for terminated child processes
+                //  waitpid w/ optns: able to specify responses to other changes in child's status
                 
                 if (pid == -1) {
                     perror("waitpid");

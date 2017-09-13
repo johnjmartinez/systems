@@ -1,5 +1,10 @@
 #include "yash.h"
 
+static void sgnl_catcher(int sig_num) {
+    printf("\n- Caught signal %d\n# ", sig_num);
+    fflush(stdout);
+}
+
 int main(int argc, char *argv[]) {
 
     char line[LINE_MAX];
