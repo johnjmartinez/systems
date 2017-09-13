@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
 				else if(pid == 0) {
 					execvp(args[0], args);
 				    perror("vsh");
+                    _exit(0);
 				}
 				else {
 					waitpid(pid, &err, 0);

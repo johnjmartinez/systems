@@ -1,13 +1,4 @@
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#define LINE_MAX 200
-#define	DELIM " \t\n\a\r"
+#include "shell/yash.h"
 
 static void sgnl_catcher(int sig_num) {
     printf("\n- Caught signal %d\n# ", sig_num);
@@ -24,7 +15,7 @@ bool tokenizer (char * line, char * _tokens[], int * count) {
     
     int i = 0;
     char * pointer = strtok(line, DELIM);  
-      
+          
     do {
        _tokens[i++] = pointer; 
 	} while ( (pointer = strtok(NULL, DELIM)) != NULL );
@@ -84,15 +75,15 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
 }
 
 bool valid (int pip, int out, int in) {     // CONSTRAINT CHECKING
-    if ( (pip < in) && !pip ) {
+    if ( (pip < in) && pip ) {
         printf("ERROR: invalid job: \'|\' followed by \'<\'\n");
         return false;
     }
-    else if ( (out < in) && !out ) {
+    else if ( (out < in) && out ) {
         printf("ERROR: invalid job: \'>\' followed by \'<\'\n");
         return false;
     }
-    else if ( (out < pip) && !out ) {
+    else if ( (out < pip) && out ) {
         printf("ERROR: invalid job: \'>\' followed by \'|\'\n");
         return false;
     }
@@ -100,6 +91,14 @@ bool valid (int pip, int out, int in) {     // CONSTRAINT CHECKING
 }
 
 bool executor (char * _tokens[], int pip, int in, int out, int count ) {
+        
+        pid_t pid;
+        int err;
+        bool send_to_bg = false;
+        
+        if ( strncmp(_tokens[count-1],"&",2)==0 ) {
+            send_to_bg = true; printf("\t - send to bg\n");
+        }
 
         if ( (count==1) && (strncmp(_tokens[0],"fg",2)==0) ) {      // FG wait for completion
             printf("\t - found fg\n");
@@ -113,8 +112,18 @@ bool executor (char * _tokens[], int pip, int in, int out, int count ) {
         else if ( (count==1) && (strncmp(_tokens[0],"jobs",4)==0) ) { // JOBS
             printf("\t - found \'jobs\'\n");
         }
-        else if ( !pip && !out && !in) {
-            printf("\t - found simple job\n");
+        else if ( !pip && !out && !in ) {
+            if ((pid=fork()) < 0) {
+                perror ("ERROR: fork failed");
+                return true;
+            }
+                
+            else if (!pid) {         // CHILD
+                execvp(_tokens[0], _tokens); 
+                perror("ERROR");
+            }
+            else if (pid)            // PARENT
+                waitpid (pid, &err, 0);       
         }
         return false;
 
@@ -144,7 +153,7 @@ int main(int argc, char *argv[]) {
         
         count = 0;
         skip = tokenizer(line, _tokens, &count);
-        if (skip) continue;
+        if (skip || (_tokens[0]==NULL)) continue;
         
         pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
         skip = parser(_tokens, &pipe_pos, &fwd_pos, &bck_pos);
