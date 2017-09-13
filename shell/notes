@@ -4,7 +4,9 @@
  + Child does NOT inherit signals handlers
  + Child inherits ENV 
  + GNU99 C CODE
- 
+ + signal handler for main process and child process should be different.
+
+
 # BUILTINS
  - fg : only token in line? --- wait for job completion
  - bg : only token in line? -- !wait for job completion 
