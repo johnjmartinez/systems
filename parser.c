@@ -43,7 +43,7 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
                 printf("ERROR: \'&\' can only be used as last char, following a cmd\n");
                 return true;
             }
-            //printf("found &");
+            // DEBUG printf("found &");
         } 
         else if ( strncmp(_tokens[i], "<", 1) == 0 ) {      // BCK STDIN <
             if (*bck) {
@@ -54,7 +54,7 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
                 printf("ERROR: \'<\' can only be used as: \'(cmd) < (file)\'\n");
                 return true;
             }                
-            *bck = i; // printf("found <");
+            *bck = i; // DEBUG printf("found <");
         }      
         else if ( strncmp(_tokens[i], ">", 1) == 0 ) {      // FWD STDOUT > 
             if (*fwd) {
@@ -65,7 +65,7 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
                 printf("ERROR: \'>\' can only be used as: \'(cmd) > (file)\'\n");
                 return true;
             }                
-            *fwd = i; // printf("found >");
+            *fwd = i; // DEBUG printf("found >");
         }      
         else if ( strncmp(_tokens[i], "|", 1) == 0 ) {      // PIPE STDOUT | STDIN 
             if (*pip) {
@@ -76,11 +76,48 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
                 printf("ERROR: \'|\' can only be used as: \'(cmd) | (cmd)\'\n");
                 return true;
             }
-            *pip = i; // printf("found |");
-        }      
-        printf ("\t%i %s\n", i, _tokens[i]);
+            *pip = i; // DEBUG printf("found |");
+        } 
+        // DEBUG printf("\t%i %s\n", i, _tokens[i]);
     }
     return false;
+}
+
+bool valid (int pip, int out, int in) {     // CONSTRAINT CHECKING
+    if ( (pip < in) && !pip ) {
+        printf("ERROR: invalid job: \'|\' followed by \'<\'\n");
+        return false;
+    }
+    else if ( (out < in) && !out ) {
+        printf("ERROR: invalid job: \'>\' followed by \'<\'\n");
+        return false;
+    }
+    else if ( (out < pip) && !out ) {
+        printf("ERROR: invalid job: \'>\' followed by \'|\'\n");
+        return false;
+    }
+    return true;
+}
+
+bool executor (char * _tokens[], int pip, int in, int out, int count ) {
+
+        if ( (count==1) && (strncmp(_tokens[0],"fg",2)==0) ) {      // FG wait for completion
+            printf("\t - found fg\n");
+        }
+        else if ( (count==1) && (strncmp(_tokens[0],"bg",2)==0) ) { // BG !wait for completion
+            printf("\t - found bg\n");
+        }   
+        else if ( (count==1) && (strncmp(_tokens[0],"cd",2)==0) ) { // CD -- chdir()
+            printf("\t - found cd\n");
+        }
+        else if ( (count==1) && (strncmp(_tokens[0],"jobs",4)==0) ) { // JOBS
+            printf("\t - found \'jobs\'\n");
+        }
+        else if ( !pip && !out && !in) {
+            printf("\t - found simple job\n");
+        }
+        return false;
+
 }
 
 int main(int argc, char *argv[]) {
@@ -100,35 +137,27 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
         skip = false;
         
-        if ( fgets(line, LINE_MAX, stdin) == NULL ) { // catch ctrl+d (EOF)
+        if ( fgets(line, LINE_MAX, stdin) == NULL ) { // catch ctrl+d (EOF) on empty line
             printf("\n");
             return(0);
-        }    
- 
+        }   
+        
         count = 0;
         skip = tokenizer(line, _tokens, &count);
         if (skip) continue;
         
         pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
         skip = parser(_tokens, &pipe_pos, &fwd_pos, &bck_pos);
-        printf ("p:%i f:%i b:%i\n", pipe_pos, fwd_pos, bck_pos);
         if (skip) continue;
-
+        
+        if(!valid(pipe_pos, fwd_pos, bck_pos)) continue;
+        
+        printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
+        skip = executor(_tokens, pipe_pos, fwd_pos, bck_pos, count);
+        if (skip) continue;
+        
     }
     printf("\n");
     return(1);
 }
-
-        /* MOVE TO EXEC part to do with jobs, cd
-        else if ( strncmp(_tokens[i], "fg", 2) == 0 )  {    // FG wait for completion
-            if ( !i && (_tokens[i+1] == NULL) ) 
-                printf("found fg");
-            else
-                continue;            
-        }
-        else if ( strncmp(_tokens[i], "bg", 2) == 0  ) {    // BG !wait for completion
-            if ( !i && (_tokens[i+1] == NULL) ) 
-                printf("found bg");
-            else
-                continue;
-        }*/     
+  
