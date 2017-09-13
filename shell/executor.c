@@ -2,7 +2,10 @@
 
 bool executor (char * _tokens[], int pip, int in, int out, int count ) {
 
+    fflush(0);
     bool send_to_bg = false;
+    
+    
     if ( strncmp(_tokens[count-1],"&",2)==0 ) {
         send_to_bg = true; printf("\t - send to bg\n");
     }
@@ -36,6 +39,10 @@ bool executor (char * _tokens[], int pip, int in, int out, int count ) {
     else if ( !pip && !out && in ) {    // only bck < REDIRECT
         _tokens[in] = NULL;
         exec_bck( _tokens, _tokens[in+1]);
+    }
+    else if ( pip && !out && !in ) {    // only pipe | REDIRECT
+        _tokens[pip] = NULL;
+        exec_pipe( &_tokens[0], &_tokens[pip+1]);
     }
 
     return false;
@@ -101,8 +108,8 @@ void exec_fwd (char * cmd[], char * fileout) {
     }
     else if (!cid) {         // CHILD
         fwd = open(fileout, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-        close(1);
-        dup(fwd); // assigned out (1) by default
+        dup2(fwd, STDOUT_FILENO);
+        close(fwd);
         execvp(cmd[0], cmd);
         perror("ERROR");
     }
@@ -119,8 +126,8 @@ void exec_bck (char * cmd[], char * filein) {
     }
     else if (!cid) {         // CHILD
         bck = open(filein, O_RDONLY);
-        close(0);
-        dup(bck); // assigned in (0) by default
+        dup2(bck, STDIN_FILENO);
+        close(bck);
         execvp(cmd[0], cmd);
         perror("ERROR");
     }

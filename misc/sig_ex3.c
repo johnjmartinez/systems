@@ -8,9 +8,9 @@
     stdout for top and read end serving as stdin for grep.
     
     First child execs top & creates a new session with itself as member leader of process 
-    group in it. Process group id is same as child's pid (pid_ch1).
+    grp in it. Process grp id is same as child's pid (pid_ch1).
     
-    Second child execsgrep & joins process group that first child created.
+    Second child execsgrep & joins process grp that first child created.
     
     Ctr-c : parent relays a SIGINT to both children using kill(-pid_ch1,SIGINT) 
     The two child processes receive the SIGINT and their default behavior is to terminate. 
@@ -34,11 +34,11 @@ int pipefd[2];
 int status, pid_ch1, pid_ch2, pid;
 
 static void sig_int(int signo) {
-    printf("Sending signals to group:%d\n",pid_ch1); // group id is pid of 1st in pipeline
+    printf("Sending signals to grp:%d\n",pid_ch1); // grp id is pid of 1st in pipeline
     kill(-pid_ch1,SIGINT);
 }
 static void sig_tstp(int signo) {
-    printf("Sending SIGTSTP to group:%d\n",pid_ch1); // group id is pid of 1st in pipeline
+    printf("Sending SIGTSTP to grp:%d\n",pid_ch1); // grp id is pid of 1st in pipeline
     kill(-pid_ch1,SIGTSTP);
 }
 
@@ -98,7 +98,7 @@ int main(void) {
         else {  // Child 2
             sleep(1);
 
-            setpgid(0,pid_ch1); // child2 joins group whose group id is same as child1's pid
+            setpgid(0,pid_ch1); // child2 joins grp whose grp id is same as child1's pid
             close(pipefd[1]);   // close the write end
 
             dup2(pipefd[0],STDIN_FILENO);
@@ -111,8 +111,8 @@ int main(void) {
         }
     }       // END if (pid_ch1 > 0)
     else {  // Child 1
-        setsid();   // child 1 creates new session, new group, and becomes leader -
-                    // group id is same as his pid: pid_ch1
+        setsid();   // child 1 creates new session, new grp, and becomes leader -
+                    // grp id is same as his pid: pid_ch1
                     
         close(pipefd[0]); // close the read end
         dup2(pipefd[1],STDOUT_FILENO);
