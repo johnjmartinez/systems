@@ -21,6 +21,8 @@
  * two commands max (if not using |, only one) per job
  * no STDERR redirects?
  * command + args + redirects if any 
+ * only one <, and if necessary before > or |
+ * only one >, and if necessary only after |
  
 # NOT SURE
  % implement + integrate job control table
