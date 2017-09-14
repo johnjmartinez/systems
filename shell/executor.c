@@ -46,6 +46,12 @@ bool executor (char * _tokens[], int pip, int out, int in, int count ) {
     else if ( pip && out && in ) {      // both in/out w/ pipe REDIRECT
         exec_in_pipe_out ( &_tokens[0], &_tokens[pip+1], _tokens[in+1], _tokens[out+1] );
     }
+    else if ( pip && !out && in ) {     // in w/ pipe REDIRECT
+        exec_in_pipe ( &_tokens[0], &_tokens[pip+1], _tokens[in+1] );
+    }
+    else if ( pip && out && !in ) {     // out w/ pipe REDIRECT
+        exec_pipe_out ( &_tokens[0], &_tokens[pip+1], _tokens[out+1] );
+    }
 
     return false;
 }
