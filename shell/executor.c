@@ -7,7 +7,7 @@ bool executor (char * _tokens[], int pip, int out, int in, int count ) {
     if (in)  _tokens[in]  = NULL;
     if (out) _tokens[out] = NULL;   
     
-    bool send_to_bg = (strncmp (_tokens[count-1],"&",2) == 0);
+    bool send_to_bg = (strncmp (_tokens[count-1],"&",1) == 0);
     
     if ( (count==1) && (strncmp (_tokens[0],"fg",2)==0) ) {          // FG wait for completion
         printf ("\t - found fg\n");

@@ -9,6 +9,10 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
                 printf("ERROR: \'&\' can only be used as last char, following a cmd\n");
                 return true;
             }
+            else if (*pip) {
+                printf("ERROR: \'|\' and \'&\' not allowed in command line\n");
+                return true;
+            }
             // DEBUG printf("found &");
         }
         else if ( strncmp(_tokens[i], "<", 1) == 0 ) {      // BCK STDIN <
@@ -54,13 +58,13 @@ bool valid (int pip, int out, int in) {     // CONSTRAINT CHECKING
         printf("ERROR: invalid job: \'|\' followed by \'<\'\n");
         return false;
     }
-    else if ( (out < in) && out ) {
+    /*else if ( (out < in) && out ) {
         printf("ERROR: invalid job: \'>\' followed by \'<\'\n");
         return false;
-    }
+    }*/
     else if ( (out < pip) && out ) {
         printf("ERROR: invalid job: \'>\' followed by \'|\'\n");
         return false;
-    }
+    }    
     return true;
 }
