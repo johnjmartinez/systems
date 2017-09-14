@@ -1,9 +1,8 @@
 #include "yash.h"
 
-static void sgnl_catcher(int sig_num) {
-    printf("\n- Caught signal %d\n# ", sig_num);
-    fflush(stdout);
-}
+struct termios yash_modes;
+pid_t yash_pgid;
+job * head_job = NULL;
 
 int main(int argc, char *argv[]) {
 
@@ -13,8 +12,7 @@ int main(int argc, char *argv[]) {
     int pipe_pos, fwd_pos, bck_pos, count;
     bool skip;
     
-    signal(SIGINT,  sgnl_catcher);  // catch ctrl+c
-    signal(SIGTSTP, sgnl_catcher);  // catch ctrl+z
+    yash_init();
 
     while(1) {
     
@@ -37,11 +35,30 @@ int main(int argc, char *argv[]) {
         
         if(!valid(pipe_pos, fwd_pos, bck_pos)) continue;
         
-        printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
+        // DEBUG printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
         skip = executor(_tokens, pipe_pos, fwd_pos, bck_pos, count);
         if (skip) continue;
         
     }
     printf("\n");
     return(1);
+}
+
+void yash_init() {
+    // Ignore interactive and job-control signals.
+    signal (SIGINT, SIG_IGN);
+    signal (SIGQUIT, SIG_IGN);
+    signal (SIGTSTP, SIG_IGN);
+    signal (SIGTTIN, SIG_IGN);
+    signal (SIGTTOU, SIG_IGN);
+    signal (SIGCHLD, SIG_IGN);
+
+    yash_pgid = getpid ();                  // set yash group id
+    if (setpgid (yash_pgid, yash_pgid) < 0) {
+        perror ("ERROR: yahs init - setpgid");
+        exit (1);
+    }
+
+    tcsetpgrp (STDIN_FILENO, yash_pgid);    // grab terminal control
+    tcgetattr (STDIN_FILENO, &yash_modes);  // save default attrs
 }

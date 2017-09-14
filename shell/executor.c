@@ -7,15 +7,15 @@ bool executor (char * _tokens[], int pip, int out, int in, int count ) {
     if (in)  _tokens[in]  = NULL;
     if (out) _tokens[out] = NULL;   
     
-    bool send_to_bg = (strncmp (_tokens[count-1],"&",1) == 0);
+    int send_to_bg = (strncmp (_tokens[count-1],"&",1) == 0);
     
-    if ( (count==1) && (strncmp (_tokens[0],"fg",2)==0) ) {          // FG wait for completion
+    if ( (count==1) && (strncmp (_tokens[0],"fg",2)==0) ) {         // FG wait for completion
         printf ("\t - found fg\n");
     }
-    else if ( (count==1) && (strncmp (_tokens[0],"bg",2)==0) ) {     // BG !wait for completion
+    else if ( (count==1) && (strncmp (_tokens[0],"bg",2)==0) ) {    // BG !wait for completion
         printf ("\t - found bg\n");
     }
-    else if ( (count==1) && (strncmp (_tokens[0],"jobs",4)==0) ) {   // JOBS
+    else if ( (count==1) && (strncmp (_tokens[0],"jobs",4)==0) ) {  // JOBS
         printf ("\t - found \'jobs\'\n");
     }
     else if ( (strncmp (_tokens[0],"cd",2)==0) ) {                  // CD -- chdir ()
