@@ -1,4 +1,4 @@
-#include "shell/yash.h"
+#include "../shell/yash.h"
 
 /* This example shows a "signal action function"
    Send the child various signals and observe operation. */

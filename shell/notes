@@ -30,3 +30,56 @@
  % implement + integrate job control table
  % SIGCHLD, SIGCONT? ... SIGTTIN? SIGTTOU? 
  % tcsetpgrp() ... setpgid() ... 
+
+
+# FROM CANVAS
+static void sig_int(int signo) {
+  printf("Sending signals to group:%d\n",pid_ch1);
+  kill(-pid_ch1,SIGINT);
+}
+static void sig_tstp(int signo) {
+  printf("Sending signals to group:%d\n",pid_ch1); 
+  printf("shell PID: %d\n", shell_pgid);
+  kill(-pid_ch1,SIGTSTP);
+
+}
+
+The problem is that my waitpid does not appear to be catching the SIGTSTP signal...
+ 
+void waitForSignals(int commandAmnt, bool ISDEBUG) {
+    int count = 0;
+/*
+    while (count < commandAmnt) {
+*/
+    printf("WAITING...\n");
+    pid = waitpid(-1, &status, WUNTRACED | WCONTINUED);
+
+    if (pid == -1) {
+        perror("waitpid");
+        return EXIT_FAILURE;
+    }
+    if (pid == -1) {
+	    perror("waitpid");
+	    exit(EXIT_FAILURE);
+	}
+
+    if (WIFEXITED(status))  {
+        if (ISDEBUG){ printf("child %d exited, status=%d\n", pid, WEXITSTATUS(status)); count++; }
+    } 
+    else if (WIFSIGNALED(status)) {
+        if (ISDEBUG){ printf("child %d killed by signal %d\n", pid, WTERMSIG(status));count++; }
+    } 
+    else if (WIFSTOPPED(status)) {
+        printf("**********\nSUCCESS!!!\n***********\n");
+        if (ISDEBUG){ printf("%d stopped by signal %d\n", pid,WSTOPSIG(status)); }
+        //tcsetpgrp(shell_terminal, pid_ch1);
+        kill(pid_ch1, SIGSTOP);
+    } 
+    else if (WIFCONTINUED(status)) {
+        if (ISDEBUG){printf("Continuing %d\n",pid);}
+        kill(pid, SIGCONT);
+    }
+    //}
+    //exit(0);
+    return 1;
+}
