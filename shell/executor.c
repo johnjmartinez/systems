@@ -43,7 +43,7 @@ bool executor (char * _tokens[], int pip, int out, int in, int count ) {
     else if ( !pip && out && in ) {     // both in/out, no pipe REDIRECT
         exec_in_out ( _tokens, _tokens[in+1], _tokens[out+1]);
     }
-    else if ( pip && out && in ) {     // both in/out w/ pipe REDIRECT
+    else if ( pip && out && in ) {      // both in/out w/ pipe REDIRECT
         exec_in_pipe_out ( &_tokens[0], &_tokens[pip+1], _tokens[in+1], _tokens[out+1] );
     }
 
@@ -259,8 +259,7 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
     
         if ( (bck = open (filein, O_FIN)) < 0 )
             perror ("ERROR: open failed");    
-        dup2 (bck, 0);
-        close (bck);
+        dup2 (bck, 0); close (bck);
     
         close (pipfd[0]);
         close (1);
