@@ -7,10 +7,10 @@
     Parent creates a pipe and two child processes with the write end of the pipe serving as 
     stdout for top and read end serving as stdin for grep.
     
-    First child execs top & creates a new session with itself as member leader of process 
-    grp in it. Process grp id is same as child's pid (pid_ch1).
+    1st child execs top & creates a new session with itself as member leader of pgrp in it. 
+    pgid is same as child's pid (pid_ch1).
     
-    Second child execsgrep & joins process grp that first child created.
+    2nd child execs grep & joins pgrp that first child created.
     
     Ctr-c : parent relays a SIGINT to both children using kill(-pid_ch1,SIGINT) 
     The two child processes receive the SIGINT and their default behavior is to terminate. 
@@ -43,7 +43,7 @@ static void sig_tstp(int signo) {
 }
 
 int main(void) {
-    char ch[1]={0};
+    //char ch[1]={0};
     
     if (pipe(pipefd) == -1) {
         perror("pipe");
@@ -51,11 +51,11 @@ int main(void) {
     }
     
     pid_ch1 = fork();
-    if (pid_ch1 > 0) {  // Parent
+    if (pid_ch1 > 0) {  // _Parent
         printf("Child1 pid = %d\n",pid_ch1);
         
         pid_ch2 = fork();
-        if (pid_ch2 > 0) {  // Parent
+        if (pid_ch2 > 0) {  // Parent_
             printf("Child2 pid = %d\n",pid_ch2);
 
             if (signal(SIGINT, sig_int) == SIG_ERR) printf("signal(SIGINT) error");
@@ -66,32 +66,29 @@ int main(void) {
             int count = 0;
 
             while (count < 2) {
-                pid = waitpid(-1, &status, WUNTRACED | WCONTINUED); 
+                if ( (pid = waitpid(-1, &status, WUNTRACED | WCONTINUED)) < 0 ) {
                 // check if child has been stopped(WUNTRACED) or continued(WCONTINUED)
                 // wait does not take options: waitpid(-1,&status,0) is same as wait(&status)
                 //  waitpid w/o optns: waits only for terminated child processes
                 //  waitpid w/ optns: able to specify responses to other changes in child's status
-                
-                if (pid == -1) {
                     perror("waitpid");
                     exit(EXIT_FAILURE);
                 }
 
-                if (WIFEXITED(status)) {
+                if (WIFEXITED(status)) 
                     printf("child %d exited, status=%d\n", pid, WEXITSTATUS(status));count++;
-                } 
-                else if (WIFSIGNALED(status)) {
+
+                else if (WIFSIGNALED(status)) 
                     printf("child %d killed by signal %d\n", pid, WTERMSIG(status));count++;
-                } 
+
                 else if (WIFSTOPPED(status)) {
                     printf("%d stopped by signal %d\n", pid,WSTOPSIG(status));
                     printf("Sending CONT to %d\n", pid);
                     sleep(4); // sleep for 4 seconds before sending CONT
                     kill(pid,SIGCONT);
                 } 
-                else if (WIFCONTINUED(status)) {
+                else if (WIFCONTINUED(status)) 
                     printf("Continuing %d\n",pid);
-                }
             }
             exit(1);
         }       // END if (pid_ch2 > 0)
