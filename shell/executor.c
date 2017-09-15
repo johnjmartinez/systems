@@ -71,38 +71,6 @@ void exec_one (char * cmd[]) {
         waitpid (cid, &status, 0);
 }
 
-void exec_pipe (char * cmd1[], char * cmd2[]) {
-
-    pid_t cid1, cid2;
-    int status1, status2;
-    int pipfd[2];
-    pipe (pipfd);
-
-    if ( (cid1=fork ()) < 0 )
-        perror ("ERROR: fork1 failed");
-    else if (!cid1) {       // CHILD_1
-        close (pipfd[0]);
-        close (1);
-        dup2 (pipfd[1], 1);
-        execvp (cmd1[0], cmd1);
-        perror ("ERROR_1");
-    }
-    else {                  // _PARENT
-        waitpid (cid1, &status1, 0);
-        close (pipfd[1]);
-
-        if ( (cid2=fork ()) < 0 )
-            perror ("ERROR: fork2 failed");
-        else if (!cid2) {   // CHILD_2
-            close (0);
-            dup2 (pipfd[0], 0);
-            execvp (cmd2[0], cmd2);
-            perror ("ERROR_2");
-        }
-        else                // PARENT_
-            waitpid (cid2, &status2, 0);
-    }
-}
 
 void exec_fwd (char * cmd[], char * fileout) {
     pid_t cid;
@@ -164,26 +132,19 @@ void exec_in_out (char * cmd[], char * filein, char * fileout) {
         waitpid (cid, &status, 0);
 }
 
-void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileout) {
-    
-    //this is assuming a < b | c > d ---  which makes more sense than anything else
+void exec_pipe (char * cmd1[], char * cmd2[]) {
+
     pid_t cid1, cid2;
-    int status1, status2, fwd, bck;
+    int status1, status2;
     int pipfd[2];
     pipe (pipfd);
 
-    if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
-    
+    if ( (cid1=fork ()) < 0 )
+        perror ("ERROR: fork1 failed");
     else if (!cid1) {       // CHILD_1
-    
-        if ( (bck = open (filein, O_FIN)) < 0 )
-            perror ("ERROR: open failed");    
-        dup2 (bck, 0); close (bck);
-    
         close (pipfd[0]);
         close (1);
         dup2 (pipfd[1], 1);
-        
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1");
     }
@@ -191,14 +152,9 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
         waitpid (cid1, &status1, 0);
         close (pipfd[1]);
 
-        if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
-        
+        if ( (cid2=fork ()) < 0 )
+            perror ("ERROR: fork2 failed");
         else if (!cid2) {   // CHILD_2
-        
-            if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) 
-                perror ("ERROR: open failed");
-            dup2 (fwd, 1); close (fwd);
- 
             close (0);
             dup2 (pipfd[0], 0);
             execvp (cmd2[0], cmd2);
@@ -250,7 +206,6 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
     }
 }
 
-
 void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
 
     //this is assuming a < b | c ---  which makes more sense than anything else
@@ -292,3 +247,47 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
     }
 }
 
+void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileout) {
+    
+    //this is assuming a < b | c > d ---  which makes more sense than anything else
+    pid_t cid1, cid2;
+    int status1, status2, fwd, bck;
+    int pipfd[2];
+    pipe (pipfd);
+
+    if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
+    
+    else if (!cid1) {       // CHILD_1
+    
+        if ( (bck = open (filein, O_FIN)) < 0 )
+            perror ("ERROR: open failed");    
+        dup2 (bck, 0); close (bck);
+    
+        close (pipfd[0]);
+        close (1);
+        dup2 (pipfd[1], 1);
+        
+        execvp (cmd1[0], cmd1);
+        perror ("ERROR_1");
+    }
+    else {                  // _PARENT
+        waitpid (cid1, &status1, 0);
+        close (pipfd[1]);
+
+        if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
+        
+        else if (!cid2) {   // CHILD_2
+        
+            if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) 
+                perror ("ERROR: open failed");
+            dup2 (fwd, 1); close (fwd);
+ 
+            close (0);
+            dup2 (pipfd[0], 0);
+            execvp (cmd2[0], cmd2);
+            perror ("ERROR_2");
+        }
+        else                // PARENT_
+            waitpid (cid2, &status2, 0);
+    }
+}

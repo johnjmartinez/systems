@@ -51,6 +51,6 @@ void launch_job (proc * p, pid_t pgid, int fg) {
 
     /* Exec the new process.  Make sure we exit.  */
     execvp (p->cmd[0], p->cmd);
-    perror ("YAHS");
+    perror ("YASH");
     exit (1);
 }

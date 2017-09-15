@@ -37,7 +37,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout);
 // The following heavily influenced by 
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
-typedef struct proc  {   // PROCESS = single cmd + args + redirects 
+typedef struct proc  {      // PROCESS = single cmd + args + redirects 
   struct proc * next;         // next proc in pipe
   char ** cmd;                // for exec -- same as char * cmd[]
   pid_t pid;                  // process ID

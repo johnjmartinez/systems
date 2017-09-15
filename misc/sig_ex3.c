@@ -66,6 +66,7 @@ int main(void) {
             int count = 0;
 
             while (count < 2) {
+            
                 if ( (pid = waitpid(-1, &status, WUNTRACED | WCONTINUED)) < 0 ) {
                 // check if child has been stopped(WUNTRACED) or continued(WCONTINUED)
                 // wait does not take options: waitpid(-1,&status,0) is same as wait(&status)
@@ -75,16 +76,18 @@ int main(void) {
                     exit(EXIT_FAILURE);
                 }
 
-                if (WIFEXITED(status)) 
-                    printf("child %d exited, status=%d\n", pid, WEXITSTATUS(status));count++;
-
-                else if (WIFSIGNALED(status)) 
-                    printf("child %d killed by signal %d\n", pid, WTERMSIG(status));count++;
-
+                if (WIFEXITED(status)) {
+                    printf("child %d exited, status=%d\n", pid, WEXITSTATUS(status)); 
+                    count++;
+                }
+                else if (WIFSIGNALED(status)) {
+                    printf("child %d killed by signal %d\n", pid, WTERMSIG(status)); 
+                    count++;
+                }
                 else if (WIFSTOPPED(status)) {
                     printf("%d stopped by signal %d\n", pid,WSTOPSIG(status));
-                    printf("Sending CONT to %d\n", pid);
                     sleep(4); // sleep for 4 seconds before sending CONT
+                    printf("Sending CONT to %d\n", pid);
                     kill(pid,SIGCONT);
                 } 
                 else if (WIFCONTINUED(status)) 
