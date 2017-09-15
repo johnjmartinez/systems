@@ -63,7 +63,12 @@ void exec_one (char * cmd[]) {
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork failed");
     
     else if (!cid1) {   // CHILD
-        setsid();    
+        //setsid();    
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
         execvp (cmd[0], cmd);
         perror ("ERROR"); _exit(1);
     }
@@ -78,7 +83,12 @@ void exec_fwd (char * cmd[], char * fileout) {
     
     else if (!cid1) {   // CHILD
         
-        setsid();
+        //setsid();
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
     
         if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 )  perror ("ERROR: open failed");
         dup2 (fwd, 1);
@@ -97,7 +107,12 @@ void exec_bck (char * cmd[], char * filein) {
     
     else if (!cid1) {   // CHILD
     
-        setsid();
+        //setsid();
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
 
         if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");
         dup2 (bck, 0);
@@ -116,7 +131,12 @@ void exec_in_out (char * cmd[], char * filein, char * fileout) {
     
     else if (!cid1) {   // CHILD
         
-        setsid();
+        //setsid();
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
                 
         if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) perror ("ERROR: open failed");
         if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");
@@ -127,7 +147,7 @@ void exec_in_out (char * cmd[], char * filein, char * fileout) {
         perror ("ERROR"); _exit(1);
     }
     else                // PARENT
-        waitpid (cid1, &status1, 0);
+        if (!send_to_bg) waitpid (cid1, &status1, 0);
 }
 
 void exec_pipe (char * cmd1[], char * cmd2[]) {
@@ -163,9 +183,10 @@ void exec_pipe (char * cmd1[], char * cmd2[]) {
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
         }
-        else                // PARENT_
+        else {              // PARENT_
             close (pipfd[0]);
             waitpid (cid2, &status2, 0);
+        }
     }
 }
 
@@ -178,7 +199,12 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
     
     else if (!cid1) {   // CHILD_1
     
-        setsid();
+        //setsid();
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
 
         close (pipfd[0]);
         close (1);
@@ -207,9 +233,10 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
         }
-        else                // PARENT_
+        else  {              // PARENT_
             close (pipfd[0]);
             waitpid (cid2, &status2, 0);
+        }
     }
 }
 
@@ -222,7 +249,12 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
     
     else if (!cid1) {   // CHILD_1
 
-        setsid();
+        //setsid();
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
     
         if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");    
         dup2 (bck, 0); close (bck);
@@ -251,9 +283,10 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
         }
-        else                // PARENT_
+        else  {               // PARENT_
             close (pipfd[0]);
             waitpid (cid2, &status2, 0);
+        }
     }
 }
 
@@ -266,7 +299,12 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
     
     else if (!cid1) {   // CHILD_1
     
-        setsid();
+        //setsid();
+		gid = getpid ();
+		if (setpgid (gid, gid) < 0)  {
+			perror ("ERROR: setpgid failed");
+			exit (1);
+		}
 
         if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");    
         dup2 (bck, 0); close (bck);
@@ -298,8 +336,9 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
         }
-        else                // PARENT_
+        else  {             // PARENT_
             close (pipfd[0]);
             waitpid (cid2, &status2, 0);
+        }
     }
 }

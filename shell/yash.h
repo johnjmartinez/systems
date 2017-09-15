@@ -19,7 +19,7 @@
 #define O_FOUT O_WRONLY|O_CREAT|O_TRUNC
 #define O_FIN  O_RDONLY
 
-typedef struct proc  {      // PROCESS = single cmd + args + redirects 
+typedef struct _proc  {      // PROCESS = single cmd + args + redirects 
   struct proc * next;         // next proc in pipe
   char ** cmd;                // for exec -- same as char * cmd[]
   pid_t pid;                  // process ID
@@ -28,7 +28,7 @@ typedef struct proc  {      // PROCESS = single cmd + args + redirects
   int status;                 // reported status value
 } proc;
 
-typedef struct job {        // JOB = pipeline of processes. 
+typedef struct _job {        // JOB = pipeline of processes. 
   struct job * next;          // next active job
   char * cmd;                 // command line, used for messages
   proc * head_proc;           // LL of procs in job
@@ -40,7 +40,7 @@ typedef struct job {        // JOB = pipeline of processes.
 struct termios yash_modes;
 job * head_job;
 
-pid_t yash_pgid, cid1, cid2;
+pid_t yash_pgid, cid1, cid2, gid;
 int send_to_bg;
 int fwd, bck; // fwd = out = fd for >; bck = in = fd for < 
 int pipfd[2];
