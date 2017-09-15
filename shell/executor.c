@@ -88,7 +88,7 @@ void exec_fwd (char * cmd[], char * fileout) {
         perror ("ERROR"); _exit(1);
     }
     else                // PARENT
-        waitpid (cid1, &status1, 0);
+        if (!send_to_bg) waitpid (cid1, &status1, 0);
 }
 
 void exec_bck (char * cmd[], char * filein) {
@@ -107,7 +107,7 @@ void exec_bck (char * cmd[], char * filein) {
         perror ("ERROR"); _exit(1);
     }
     else                // PARENT
-        waitpid (cid1, &status1, 0);
+        if (!send_to_bg) waitpid (cid1, &status1, 0);
 }
 
 void exec_in_out (char * cmd[], char * filein, char * fileout) {

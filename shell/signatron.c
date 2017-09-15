@@ -83,7 +83,7 @@ void mv_job_to_fg (job * j, int cont) {
     wait_for_job (j);   // Wait for it to report. 
 
     tcsetpgrp (STDIN_FILENO, yash_pgid); // Put shell back in fg. 
-    tcgetattr (STDIN_FILENO, &j->modes);  // Restore shell's terminal modes.* /
+    tcgetattr (STDIN_FILENO, &j->modes);  // Restore shell's terminal modes.
     tcsetattr (STDIN_FILENO, TCSADRAIN, &yash_modes);
 }
 

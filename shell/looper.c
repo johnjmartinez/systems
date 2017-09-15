@@ -6,6 +6,9 @@ static void sig_int(int signo) {
 
 static void sig_tstp(int signo) {
     kill(-cid1, SIGTSTP);
+    fflush(stdout);
+    tcsetpgrp (STDIN_FILENO, yash_pgid);
+    tcgetattr (STDIN_FILENO, &yash_modes);  // Restore shell's terminal modes.
 }
 
 int main(int argc, char *argv[]) {
