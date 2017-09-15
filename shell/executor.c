@@ -1,23 +1,15 @@
 #include "yash.h"
+int status1, status2;
 
-static void sig_int(int signo) {
-    //printf("Sending signals to grp:%d\n", pid_ch1); // grp id is pid of 1st in pipeline
-    kill(-cid1, SIGINT);
-}
-
-static void sig_tstp(int signo) {
-    //printf("Sending SIGTSTP to grp:%d\n", pid_ch1); // grp id is pid of 1st in pipeline
-    kill(-cid1, SIGTSTP);
-}
-
-bool executor (char * _tokens[], int pip, int out, int in, int count ) {
+bool executor (char * _tokens[], int pip, int out, int in, int count, job * j) {
 
     fflush (0);
     if (pip) _tokens[pip] = NULL;
     if (in)  _tokens[in]  = NULL;
     if (out) _tokens[out] = NULL;   
     
-    int send_to_bg = (strncmp (_tokens[count-1],"&",1) == 0);
+    send_to_bg = (strncmp (_tokens[count-1],"&",1) == 0);
+    if (send_to_bg) _tokens[count-1] = NULL;
     
     if ( (count==1) && (strncmp (_tokens[0],"fg",2)==0) ) {         // FG wait for completion
         printf ("\t - found fg\n");
@@ -38,30 +30,30 @@ bool executor (char * _tokens[], int pip, int out, int in, int count ) {
                 perror ("yash");
         }
     }
-    else if ( !pip && !out && !in ) {   // NO REDIRECTS
+    
+    else if ( !pip && !out && !in )     // NO REDIRECTS
         exec_one ( _tokens);
-    }
-    else if ( !pip && out && !in ) {    // only fwd > REDIRECT
+    
+    else if ( !pip && out && !in )      // only out > REDIRECT
         exec_fwd ( _tokens, _tokens[out+1]);
-    }
-    else if ( !pip && !out && in ) {    // only bck < REDIRECT
+    
+    else if ( !pip && !out && in )      // only in < REDIRECT
         exec_bck ( _tokens, _tokens[in+1]);
-    }
-    else if ( pip && !out && !in ) {    // only pipe | REDIRECT
+    
+    else if ( pip && !out && !in )      // only pipe | REDIRECT
         exec_pipe ( &_tokens[0], &_tokens[pip+1]);
-    }
-    else if ( !pip && out && in ) {     // both in/out, no pipe REDIRECT
+    
+    else if ( !pip && out && in )       // both in/out, no pipe REDIRECT
         exec_in_out ( _tokens, _tokens[in+1], _tokens[out+1]);
-    }
-    else if ( pip && out && in ) {      // both in/out w/ pipe REDIRECT
+    
+    else if ( pip && out && in )        // both in/out w/ pipe REDIRECT
         exec_in_pipe_out ( &_tokens[0], &_tokens[pip+1], _tokens[in+1], _tokens[out+1] );
-    }
-    else if ( pip && !out && in ) {     // in w/ pipe REDIRECT
+    
+    else if ( pip && !out && in )       // in w/ pipe REDIRECT
         exec_in_pipe ( &_tokens[0], &_tokens[pip+1], _tokens[in+1] );
-    }
-    else if ( pip && out && !in ) {     // out w/ pipe REDIRECT
+    
+    else if ( pip && out && !in )       // out w/ pipe REDIRECT
         exec_pipe_out ( &_tokens[0], &_tokens[pip+1], _tokens[out+1] );
-    }
 
     return false;
 }
@@ -73,10 +65,10 @@ void exec_one (char * cmd[]) {
     else if (!cid1) {   // CHILD
         setsid();    
         execvp (cmd[0], cmd);
-        perror ("ERROR");
+        perror ("ERROR"); _exit(1);
     }
     else                // PARENT
-        waitpid (cid1, &status1, 0);
+        if (!send_to_bg) waitpid (cid1, &status1, 0);
 }
 
 
@@ -93,7 +85,7 @@ void exec_fwd (char * cmd[], char * fileout) {
         close (fwd);
 
         execvp (cmd[0], cmd);
-        perror ("ERROR");
+        perror ("ERROR"); _exit(1);
     }
     else                // PARENT
         waitpid (cid1, &status1, 0);
@@ -112,7 +104,7 @@ void exec_bck (char * cmd[], char * filein) {
         close (bck);
 
         execvp (cmd[0], cmd);
-        perror ("ERROR");
+        perror ("ERROR"); _exit(1);
     }
     else                // PARENT
         waitpid (cid1, &status1, 0);
@@ -132,7 +124,7 @@ void exec_in_out (char * cmd[], char * filein, char * fileout) {
         dup2 (bck, 0); close (bck);
         
         execvp (cmd[0], cmd);
-        perror ("ERROR");
+        perror ("ERROR"); _exit(1);
     }
     else                // PARENT
         waitpid (cid1, &status1, 0);
@@ -151,7 +143,7 @@ void exec_pipe (char * cmd1[], char * cmd2[]) {
         dup2 (pipfd[1], 1);
         
         execvp (cmd1[0], cmd1);
-        perror ("ERROR_1");
+        perror ("ERROR_1"); _exit(1);
     }
     else {              // _PARENT
     
@@ -162,11 +154,14 @@ void exec_pipe (char * cmd1[], char * cmd2[]) {
         
         else if (!cid2) {   // CHILD_2
         
+            sleep(0.001);
+            setpgid(STDIN_FILENO, cid1);
+        
             close (0);
             dup2 (pipfd[0], 0);
             
             execvp (cmd2[0], cmd2);
-            perror ("ERROR_2");
+            perror ("ERROR_2"); _exit(1);
         }
         else                // PARENT_
             close (pipfd[0]);
@@ -190,7 +185,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
         dup2 (pipfd[1], 1);
         
         execvp (cmd1[0], cmd1);
-        perror ("ERROR_1");
+        perror ("ERROR_1"); _exit(1);
     }
     else {              // _PARENT
         close (pipfd[1]);
@@ -200,6 +195,9 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
         
         else if (!cid2) {   // CHILD_2
         
+            sleep(0.001);
+            setpgid(STDIN_FILENO, cid1);
+        
             if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 )  perror ("ERROR: open failed");
             dup2 (fwd, 1); close (fwd);
  
@@ -207,7 +205,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
             dup2 (pipfd[0], 0);
             
             execvp (cmd2[0], cmd2);
-            perror ("ERROR_2");
+            perror ("ERROR_2"); _exit(1);
         }
         else                // PARENT_
             close (pipfd[0]);
@@ -234,7 +232,7 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
         dup2 (pipfd[1], 1);
         
         execvp (cmd1[0], cmd1);
-        perror ("ERROR_1");
+        perror ("ERROR_1"); _exit(1);
     }
     else {              // _PARENT
         close (pipfd[1]);
@@ -244,11 +242,14 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
         
         else if (!cid2) {   // CHILD_2
         
+            sleep(0.001);
+            setpgid(STDIN_FILENO, cid1);
+        
             close (0);
             dup2 (pipfd[0], 0);
             
             execvp (cmd2[0], cmd2);
-            perror ("ERROR_2");
+            perror ("ERROR_2"); _exit(1);
         }
         else                // PARENT_
             close (pipfd[0]);
@@ -275,7 +276,7 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
         dup2 (pipfd[1], 1);
         
         execvp (cmd1[0], cmd1);
-        perror ("ERROR_1");
+        perror ("ERROR_1"); _exit(1);
     }
     else {              // _PARENT
         close (pipfd[1]);
@@ -285,6 +286,9 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
         
         else if (!cid2) {   // CHILD_2
         
+            sleep(0.001);
+            setpgid(STDIN_FILENO, cid1);
+            
             if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) perror ("ERROR: open failed");
             dup2 (fwd, 1); close (fwd);
  
@@ -292,7 +296,7 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
             dup2 (pipfd[0], 0);
             
             execvp (cmd2[0], cmd2);
-            perror ("ERROR_2");
+            perror ("ERROR_2"); _exit(1);
         }
         else                // PARENT_
             close (pipfd[0]);

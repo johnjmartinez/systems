@@ -15,7 +15,7 @@ bool tokenizer (char * line, char * _tokens[], int * count) {
        _tokens[i++] = pointer; 
 	} while ( (pointer = strtok(NULL, DELIM)) != NULL );
 
-    _tokens[i] = NULL;
-    *count = i; 
+    _tokens[i] = NULL;  // line[strlen(line)-1] != '\0';
+    * count = i; 
     return false;
 }

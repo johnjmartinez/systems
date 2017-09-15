@@ -98,7 +98,7 @@ int main(void) {
         else {  // Child 2
             sleep(1);
 
-            setpgid(0,pid_ch1); // child2 joins grp whose grp id is same as child1's pid
+            setpgid(0, pid_ch1); // child2 joins grp whose grp id is same as child1's pid
             close(pipefd[1]);   // close the write end
 
             dup2(pipefd[0],STDIN_FILENO);
