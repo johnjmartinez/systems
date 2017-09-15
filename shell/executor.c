@@ -1,5 +1,15 @@
 #include "yash.h"
 
+static void sig_int(int signo) {
+    //printf("Sending signals to grp:%d\n", pid_ch1); // grp id is pid of 1st in pipeline
+    kill(-cid1, SIGINT);
+}
+
+static void sig_tstp(int signo) {
+    //printf("Sending SIGTSTP to grp:%d\n", pid_ch1); // grp id is pid of 1st in pipeline
+    kill(-cid1, SIGTSTP);
+}
+
 bool executor (char * _tokens[], int pip, int out, int in, int count ) {
 
     fflush (0);
@@ -58,109 +68,108 @@ bool executor (char * _tokens[], int pip, int out, int in, int count ) {
 
 void exec_one (char * cmd[]) {
 
-    pid_t cid;
-    int status;
-
-    if ( (cid=fork ()) < 0 )
-        perror ("ERROR: fork failed");
-    else if (!cid) {         // CHILD
+    if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork failed");
+    
+    else if (!cid1) {   // CHILD
+        setsid();    
         execvp (cmd[0], cmd);
         perror ("ERROR");
     }
-    else                    // PARENT
-        waitpid (cid, &status, 0);
+    else                // PARENT
+        waitpid (cid1, &status1, 0);
 }
 
 
 void exec_fwd (char * cmd[], char * fileout) {
-    pid_t cid;
-    int status, fwd;
-
-    if ( (cid=fork ()) < 0 ) 
-        perror ("ERROR: fork failed");
-    else if (!cid) {         // CHILD
-        if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) 
-                perror ("ERROR: open failed");
-                
+    
+    if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork failed");
+    
+    else if (!cid1) {   // CHILD
+        
+        setsid();
+    
+        if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 )  perror ("ERROR: open failed");
         dup2 (fwd, 1);
         close (fwd);
+
         execvp (cmd[0], cmd);
         perror ("ERROR");
     }
-    else                    // PARENT
-        waitpid (cid, &status, 0);
+    else                // PARENT
+        waitpid (cid1, &status1, 0);
 }
 
 void exec_bck (char * cmd[], char * filein) {
-    pid_t cid;
-    int status, bck;
+    
+    if ( (cid1=fork ()) < 0 )  perror ("ERROR: fork failed");
+    
+    else if (!cid1) {   // CHILD
+    
+        setsid();
 
-    if ( (cid=fork ()) < 0 ) 
-        perror ("ERROR: fork failed");
-    else if (!cid) {         // CHILD
-        if ( (bck = open (filein, O_FIN)) < 0 )
-            perror ("ERROR: open failed");
-            
+        if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");
         dup2 (bck, 0);
         close (bck);
+
         execvp (cmd[0], cmd);
         perror ("ERROR");
     }
-    else                    // PARENT
-        waitpid (cid, &status, 0);
+    else                // PARENT
+        waitpid (cid1, &status1, 0);
 }
 
 void exec_in_out (char * cmd[], char * filein, char * fileout) {
-    pid_t cid;
-    int status, fwd, bck;
-
-    if ( (cid=fork ()) < 0 ) 
-        perror ("ERROR: fork failed");
-    else if (!cid) {         // CHILD
-        if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) 
-                perror ("ERROR: open failed");
-        if ( (bck = open (filein, O_FIN)) < 0 )
-            perror ("ERROR: open failed");
-            
+    
+    if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork failed");
+    
+    else if (!cid1) {   // CHILD
+        
+        setsid();
+                
+        if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) perror ("ERROR: open failed");
+        if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");
         dup2 (fwd, 1); close (fwd);
         dup2 (bck, 0); close (bck);
         
         execvp (cmd[0], cmd);
         perror ("ERROR");
     }
-    else                    // PARENT
-        waitpid (cid, &status, 0);
+    else                // PARENT
+        waitpid (cid1, &status1, 0);
 }
 
 void exec_pipe (char * cmd1[], char * cmd2[]) {
 
-    pid_t cid1, cid2;
-    int status1, status2;
-    int pipfd[2];
     pipe (pipfd);
 
-    if ( (cid1=fork ()) < 0 )
-        perror ("ERROR: fork1 failed");
-    else if (!cid1) {       // CHILD_1
+    if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
+    
+    else if (!cid1) {   // CHILD_1
+    
         close (pipfd[0]);
         close (1);
         dup2 (pipfd[1], 1);
+        
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1");
     }
-    else {                  // _PARENT
-        waitpid (cid1, &status1, 0);
+    else {              // _PARENT
+    
         close (pipfd[1]);
+        waitpid (cid1, &status1, 0);
 
-        if ( (cid2=fork ()) < 0 )
-            perror ("ERROR: fork2 failed");
+        if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
+        
         else if (!cid2) {   // CHILD_2
+        
             close (0);
             dup2 (pipfd[0], 0);
+            
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2");
         }
         else                // PARENT_
+            close (pipfd[0]);
             waitpid (cid2, &status2, 0);
     }
 }
@@ -168,14 +177,13 @@ void exec_pipe (char * cmd1[], char * cmd2[]) {
 void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
 
     //this is assuming a | b > c ---  which makes more sense than anything else
-    pid_t cid1, cid2;
-    int status1, status2, fwd;
-    int pipfd[2];
     pipe (pipfd);
 
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
     
-    else if (!cid1) {       // CHILD_1
+    else if (!cid1) {   // CHILD_1
+    
+        setsid();
 
         close (pipfd[0]);
         close (1);
@@ -184,24 +192,25 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1");
     }
-    else {                  // _PARENT
-        waitpid (cid1, &status1, 0);
+    else {              // _PARENT
         close (pipfd[1]);
+        waitpid (cid1, &status1, 0);
 
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
         
         else if (!cid2) {   // CHILD_2
         
-            if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) 
-                perror ("ERROR: open failed");
+            if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 )  perror ("ERROR: open failed");
             dup2 (fwd, 1); close (fwd);
  
             close (0);
             dup2 (pipfd[0], 0);
+            
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2");
         }
         else                // PARENT_
+            close (pipfd[0]);
             waitpid (cid2, &status2, 0);
     }
 }
@@ -209,17 +218,15 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * fileout) {
 void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
 
     //this is assuming a < b | c ---  which makes more sense than anything else
-    pid_t cid1, cid2;
-    int status1, status2, bck;
-    int pipfd[2];
     pipe (pipfd);
 
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
     
-    else if (!cid1) {       // CHILD_1
+    else if (!cid1) {   // CHILD_1
+
+        setsid();
     
-        if ( (bck = open (filein, O_FIN)) < 0 )
-            perror ("ERROR: open failed");    
+        if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");    
         dup2 (bck, 0); close (bck);
     
         close (pipfd[0]);
@@ -229,9 +236,9 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1");
     }
-    else {                  // _PARENT
-        waitpid (cid1, &status1, 0);
+    else {              // _PARENT
         close (pipfd[1]);
+        waitpid (cid1, &status1, 0);
 
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
         
@@ -239,10 +246,12 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
         
             close (0);
             dup2 (pipfd[0], 0);
+            
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2");
         }
         else                // PARENT_
+            close (pipfd[0]);
             waitpid (cid2, &status2, 0);
     }
 }
@@ -250,17 +259,15 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * filein) {
 void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileout) {
     
     //this is assuming a < b | c > d ---  which makes more sense than anything else
-    pid_t cid1, cid2;
-    int status1, status2, fwd, bck;
-    int pipfd[2];
     pipe (pipfd);
 
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
     
-    else if (!cid1) {       // CHILD_1
+    else if (!cid1) {   // CHILD_1
     
-        if ( (bck = open (filein, O_FIN)) < 0 )
-            perror ("ERROR: open failed");    
+        setsid();
+
+        if ( (bck = open (filein, O_FIN)) < 0 ) perror ("ERROR: open failed");    
         dup2 (bck, 0); close (bck);
     
         close (pipfd[0]);
@@ -270,24 +277,25 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * filein, char * fileo
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1");
     }
-    else {                  // _PARENT
-        waitpid (cid1, &status1, 0);
+    else {              // _PARENT
         close (pipfd[1]);
+        waitpid (cid1, &status1, 0);
 
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
         
         else if (!cid2) {   // CHILD_2
         
-            if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) 
-                perror ("ERROR: open failed");
+            if ( (fwd = open (fileout, O_FOUT, 0644)) < 0 ) perror ("ERROR: open failed");
             dup2 (fwd, 1); close (fwd);
  
             close (0);
             dup2 (pipfd[0], 0);
+            
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2");
         }
         else                // PARENT_
+            close (pipfd[0]);
             waitpid (cid2, &status2, 0);
     }
 }

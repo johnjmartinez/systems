@@ -16,6 +16,10 @@
 #define O_FOUT O_WRONLY|O_CREAT|O_TRUNC
 #define O_FIN  O_RDONLY
 
+pid_t yash_pgid, cid1, cid2;
+int status1, status2, fwd, bck; // fwd = fd for > ; bck = fd for < 
+int pipfd[2];
+
 void yash_init();
 
 bool tokenizer (char * line, char * _tokens[], int * count);

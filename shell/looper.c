@@ -1,7 +1,6 @@
 #include "yash.h"
 
 struct termios yash_modes;
-pid_t yash_pgid;
 job * head_job = NULL;
 
 int main(int argc, char *argv[]) {
