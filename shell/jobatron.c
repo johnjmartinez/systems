@@ -1,22 +1,13 @@
 #include "yash.h"
 
-void copy_string(char *target, char *source) {
-   while (*source) {
-      *target = *source;
-      source++;
-      target++;
-   }
-   *target = '\0';
-}
-
 // The following is heavily influenced by
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
 job * new_job (char * line) {
-
+        
+        line[strlen(line)-1] = '\0';    // get rid of '\n'
         job * nj = (job *) malloc ( sizeof (job) );
-        nj->line = (char *) malloc (sizeof (char) * strlen(line));
-        strcpy (nj->line, line);
+        nj->line = strdup(line);
         nj->cpgid = 0;
         nj->paused = 0;
         nj->status = 0;
@@ -24,14 +15,14 @@ job * new_job (char * line) {
         nj->in_bg = 0;
         nj->next = head_job;
 
-        /*job * curr = head_job;
+        /*job * curr = head_job;        //back of list --- not using 
         if (curr != NULL) {
             while (curr->next != NULL)
                 curr = curr->next;
             curr->next = nj;
         }
         else*/
-        head_job = nj; // front of list
+        head_job = nj;                  // front of list (push)
 
         return nj;
 }
@@ -91,9 +82,8 @@ void job_list() {
     job * j;
     for (j = head_job; j; j = j->next) {
 
-        //fprintf(stdout, "[%d] -  %s\t%s", j->cpgid, status_update(j), j->line);
-        fprintf(stdout, "[%d] -  %d\t%s\n", j->cpgid, j->status, j->line);
-        
+        fprintf(stdout, "[%d] -  %s\t%s\n", j->cpgid, status_update(j), j->line);
+        // fprintf(stdout, "[%d] -  %d\t%s\n", j->cpgid, j->status, j->line);
     }
 }
 
@@ -112,7 +102,7 @@ char * status_update (job * j) {
 }
 
 
-job * find_job (pid_t pgid) {       // Find active job using pgid.
+job * find_job (pid_t pgid) {   // Find active job using pgid.
 
   job * j;
   for (j = head_job; j; j = j->next)
@@ -127,14 +117,14 @@ int paused_job (job * j) {       // 1 if job's paused or done.
     return 1;
 }
 
-int done_job (job * j) {     // 1 if job's done.
+int done_job (job * j) {        // 1 if job's done.
     return j->done;
 }
 
 int mark_job_status (pid_t pid, int status) {
 
     job * j;
-    if (pid > 0) {  // Update proc record
+    if (pid > 0) {              // Update proc record
         for (j = head_job; j; j = j->next) {
             if (j->cpgid == pid) {
 
@@ -153,7 +143,7 @@ int mark_job_status (pid_t pid, int status) {
         return -1;
     }
     else if (pid == 0 || errno == ECHILD)
-        return -1;  // No procs ready to report
+        return -1;              // No procs ready to report
     else {
         perror ("waitpid");
         return -1;
@@ -186,7 +176,7 @@ void job_notify () {
 
     job * j, * jlast, * jnext;
 
-    update_status ();   // Update status information for child procs
+    update_status ();                               // Update status info for jobs
 
     jlast = NULL;
     for (j = head_job; j; j = jnext) {

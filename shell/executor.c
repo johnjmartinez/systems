@@ -33,8 +33,8 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
         kill(- i->cpgid, SIGCONT);
     }
     else if ( (count==1) && (strncmp (cmds[0],"jobs",4)==0) ) {  // JOBS
-        //job_notify ();
-        job_list();
+        update_status ();
+        job_list ();
     }
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                  // CD -- chdir ()
         if ( count==2 ) {                                        // TODO:
@@ -243,7 +243,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j) {
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
         }
-        else  {              // PARENT_
+        else  {             // PARENT_
             close (pipfd[0]);
             log_job (cid1, j);
         }
@@ -291,7 +291,7 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j) {
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
         }
-        else  {               // PARENT_
+        else  {             // PARENT_
             close (pipfd[0]);
             log_job (cid1, j);
         }
