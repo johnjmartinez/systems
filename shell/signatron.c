@@ -1,5 +1,36 @@
 #include "yash.h"
 
+
+void my_wait(int _gid) { 
+
+    int status;
+    while (1) {
+
+        if ( (waitpid(- _gid, &status, WUNTRACED | WCONTINUED )) < 0 ) {
+            perror("wait_gid");
+            exit(EXIT_FAILURE);
+        }
+
+        if (WIFEXITED(status)) {
+            printf("child %d exited, status=%d\n", _gid, WEXITSTATUS(status)); 
+            break;
+        }
+        else if (WIFSIGNALED(status)) {
+            printf("child %d killed by signal %d\n", _gid, WTERMSIG(status)); 
+            break;
+        }
+        else if (WIFSTOPPED(status)) {
+            printf("%d stopped by signal %d\n", _gid, WSTOPSIG(status));
+            break;
+        } 
+        else if (WIFCONTINUED(status)) 
+            printf("Continuing %d\n", _gid); // continue blocking
+    }
+
+}
+
+
+
 // The following is heavily influenced by 
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
