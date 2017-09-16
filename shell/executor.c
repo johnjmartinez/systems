@@ -25,7 +25,7 @@ bool executor (char * cmds[], int pip, int out, int in, int count, job * j) {
         printf ("\t - found \'jobs\'\n");
     }
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                  // CD -- chdir ()
-        if ( count==2 ) {                                           // TODO:
+        if ( count==2 ) {                                        // TODO:
             if (chdir (cmds[1]) != 0)                            // update env $*WD
                 perror ("yash");
         }
@@ -77,12 +77,10 @@ void exec_one (char * cmd[], job * j) {
         perror ("ERROR"); _exit(1);
     }
     else  {             // PARENT
-        cgid = cid1;
+        j->cpgid = cid1;
         if (!send_to_bg ) {
             waitpid(cid1, &status1, WUNTRACED ); // | WNOHANG );
         }
-        //my_wait(cid1);
-        //waitpid (cid1, &status1, 0);
     }
 }
 

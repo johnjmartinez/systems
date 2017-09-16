@@ -7,7 +7,6 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <termios.h>
 #include <unistd.h>
 
 #define LINE_MAX 200
@@ -28,8 +27,6 @@ typedef struct job {
   int notified;
 } job;
 job * head_job;         // LL of jobs for accounting and signaling
-
-struct termios yash_modes;
 
 pid_t yash_pgid, cgid;
 int send_to_bg; // & in cmd line
@@ -59,8 +56,6 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j );
 void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j );
 
 // jobatron.c
-void my_wait(int _gid);
-
 job * find_job (pid_t pgid);
 int stopped_job (job * j);
 int completed_job (job * j);

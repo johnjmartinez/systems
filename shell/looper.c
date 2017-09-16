@@ -9,7 +9,7 @@ static void sig_tstp(int signo) {
     printf("Sending TSTP to %d\n", cgid);
     fflush(stdout);
     tcsetpgrp (STDIN_FILENO, yash_pgid);
-    tcgetattr (STDIN_FILENO, &yash_modes);  // Restore shell's terminal modes.
+    //tcgetattr (STDIN_FILENO, &yash_modes);    // Restore shell's terminal modes.
 }
 
 int main(int argc, char *argv[]) {
@@ -24,6 +24,8 @@ int main(int argc, char *argv[]) {
     yash_init();
 
     while(1) {
+    
+        job_notify();
 
         printf("# ");
         fflush(stdout);
@@ -73,8 +75,8 @@ void yash_init() {
         exit (1);
     }
 
-    tcsetpgrp (STDIN_FILENO, yash_pgid);    // grab terminal control
-    tcgetattr (STDIN_FILENO, &yash_modes);  // save default attrs
+    tcsetpgrp (STDIN_FILENO, yash_pgid);        // grab terminal control
+    //tcgetattr (STDIN_FILENO, &yash_modes);    // save default attrs
 }
 
 void new_job (job * nj, char * line) {
