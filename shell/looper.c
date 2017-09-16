@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     yash_init();
 
     while(1) {
-    
+
         //job_notify();
         sleep(0.1);
 
@@ -45,11 +45,11 @@ int main(int argc, char *argv[]) {
 
 // ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
 static void catch_INT (int signo) { // ctrl+c
-    
+
     job * i;
     if (cgid) {
         if ( (i = find_job (cgid)) == NULL )
-            fprintf(stderr, "YASH FATAL:catch_INT: cgid %d not found\n", cgid); 
+            fprintf(stderr, "YASH FATAL:catch_INT: cgid %d not found\n", cgid);
         else {
             i->done = 1;
             kill(- cgid, SIGINT);
@@ -64,8 +64,8 @@ static void catch_TSTP(int signo) {   // ctrl+z
 
     job * i;
     if (cgid) {
-        if ( (i = find_job (cgid)) == NULL ) 
-            fprintf(stderr, "YASH FATAL:catch_TSTP: cgid %d not found\n", cgid); 
+        if ( (i = find_job (cgid)) == NULL )
+            fprintf(stderr, "YASH FATAL:catch_TSTP: cgid %d not found\n", cgid);
         else {
             i->paused = 1;
             kill(- cgid, SIGTSTP);
@@ -78,12 +78,12 @@ static void catch_TSTP(int signo) {   // ctrl+z
 }
 
 void yash_init() {
-    
+
     head_job = NULL;
 
     if (signal(SIGINT, catch_INT) == SIG_ERR) printf("signal(SIGINT) error");
-    if (signal(SIGTSTP, catch_TSTP) == SIG_ERR) printf("signal(SIGTSTP) error");    
-        
+    if (signal(SIGTSTP, catch_TSTP) == SIG_ERR) printf("signal(SIGTSTP) error");
+
     yash_pgid = getpid ();                  // set yash group id
     if (setpgid (yash_pgid, yash_pgid) < 0) {
         perror ("ERROR: yash init - setpgid");

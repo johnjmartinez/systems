@@ -31,7 +31,7 @@ typedef struct job {
 job * head_job;         // LL of jobs for accounting and signaling
 
 pid_t yash_pgid, cgid;  // current group id in fg
-int send_to_bg; // & in cmd line
+int send_to_bg; // in cmd line
 int fwd, bck;   // fwd = out = fd for >; bck = in = fd for < 
 int pipfd[2];   // | in cmd line
 
@@ -58,16 +58,20 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
 
 // jobatron.c
 job * new_job (char * line);
-void log_job (pid_t pgid, job * j);
-void kill_jobs ();
-job * find_fg_job ();
-job * find_bg_job ();
 
+char * status_update (job * j);
+int done_job (job * j);
+int mark_job_status (pid_t pid, int status);
+int paused_job (job * j);
+
+job * find_bg_job ();
+job * find_fg_job ();
 job * find_job (pid_t pgid);
-int stopped_job (job * j);
-int completed_job (job * j);
-int mark_proc_status (pid_t pid, int status);
+
+void job_list() ; 
+void job_notify ();
+void kill_jobs ();
+void log_job (pid_t pgid, job * j);
+void print_job_info (job * j, const char * status);
 void update_status ();
 void wait_for_job (job * j);
-void print_job_info (job * j, const char * status);
-void job_notify ();
