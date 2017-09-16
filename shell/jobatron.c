@@ -1,5 +1,80 @@
 #include "yash.h"
 
+job * new_job (char * line) {
+
+        job * nj = (job *) malloc ( sizeof (job) );
+        nj->line = line ;
+        nj->cpgid = 0;
+        nj->paused = 0;
+        nj->status = 0;
+        nj->notified = 0;
+        nj->in_bg = 0;
+        nj->next = head_job;
+        
+        /*job * curr = head_job;
+        if (curr != NULL) {
+            while (curr->next != NULL)  
+                curr = curr->next;   
+            curr->next = nj;
+        }
+        else*/
+        head_job = nj; // front of list
+              
+        return nj;     
+}
+
+void log_job (pid_t pgid, job * j) {
+    int status;
+    j->cpgid = pgid;
+    
+    if (!send_to_bg ) {
+        cgid = pgid;
+        waitpid(pgid, &status, WUNTRACED );
+        j->status = status;
+    }
+    else {
+        j->in_bg = 1;
+        waitpid(pgid, &status, WUNTRACED | WNOHANG );
+        j->status = status;
+    }
+}
+
+
+void kill_jobs () {       
+
+    job * target; 
+    job * curr = head_job;
+    if (curr != NULL) {
+        while (curr->next != NULL) { 
+            target = curr;
+            curr = curr->next;  
+            kill(- target->cpgid, SIGINT);
+            free(target);
+        }
+        kill(- curr->cpgid, SIGINT);
+        free(curr);
+    }
+}
+
+job * find_fg_job () {  // Find newest job->paused/in_bg
+    
+    job * j;
+    for (j = head_job; j; j = j->next)
+      if (j->paused || j->in_bg) return j;
+    
+    return NULL;
+}
+
+job * find_bg_job () {  // Find newest job->paused
+
+    job * j;
+    for (j = head_job; j; j = j->next)
+      if (j->paused) return j;
+    
+    return NULL;
+}
+
+
 // The following is heavily influenced by 
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
@@ -28,7 +103,6 @@ int done_job (job * j) {     // 1 if all jobs have done.
       
   return 1;
 }
-
 
 int mark_proc_status (pid_t pid, int status) {
 
@@ -92,7 +166,7 @@ void job_notify () {
         jnext = j->next;
 
         if (done_job (j)) {                         // notify about & delete done job
-            print_job_info (j, "done");
+            //print_job_info (j, "done");
             if (jlast) jlast->next = jnext;
             else  head_job = jnext;
             free (j);
@@ -106,3 +180,5 @@ void job_notify () {
             jlast = j;
     }
 }
+
+

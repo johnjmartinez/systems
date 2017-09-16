@@ -1,17 +1,5 @@
 #include "yash.h"
 
-static void sig_int(int signo) {
-    kill(-cgid, SIGINT);
-}
-
-static void sig_tstp(int signo) {
-    kill(-cgid, SIGTSTP);
-    printf("Sending TSTP to %d\n", cgid);
-    fflush(stdout);
-    tcsetpgrp (STDIN_FILENO, yash_pgid);
-    //tcgetattr (STDIN_FILENO, &yash_modes);    // Restore shell's terminal modes.
-}
-
 int main(int argc, char *argv[]) {
 
     char line[LINE_MAX];
@@ -20,21 +8,20 @@ int main(int argc, char *argv[]) {
     int pipe_pos, fwd_pos, bck_pos, count;
     bool skip;
 
-    job * j_curr;
     yash_init();
 
     while(1) {
     
-        job_notify();
+        //job_notify();
+        sleep(0.1);
 
-        printf("# ");
+        fprintf(stdout, "# ");
         fflush(stdout);
         skip = false;
-        j_curr = NULL;
 
         if ( fgets(line, LINE_MAX, stdin) == NULL ) { // catch ctrl+d (EOF) on empty line
-            kill(cgid, SIGINT);
             printf("\n");
+            kill_jobs();
             return(0);
         }
 
@@ -48,26 +35,54 @@ int main(int argc, char *argv[]) {
 
         if(!valid(pipe_pos, fwd_pos, bck_pos)) continue;
 
-        new_job (j_curr, line);  // insert new job in list
         // DEBUG printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
-        executor(_tokens, pipe_pos, fwd_pos, bck_pos, count, j_curr);
+        executor(_tokens, pipe_pos, fwd_pos, bck_pos, count, line);
 
     }
     printf("\n");
     return(1);
 }
 
+// ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
+static void catch_INT (int signo) { // ctrl+c
+    
+    job * i;
+    if (cgid) {
+        if ( (i = find_job (cgid)) == NULL )
+            fprintf(stderr, "YASH FATAL:catch_INT: cgid %d not found\n", cgid); 
+        else {
+            i->done = 1;
+            kill(- cgid, SIGINT);
+            fflush(stdout);
+        }
+    }
+    fprintf(stdout, "\n");
+}
+
+// ONLY APPLY TO FG (running) JOBS  -- hence using cgid
+static void catch_TSTP(int signo) {   // ctrl+z
+
+    job * i;
+    if (cgid) {
+        if ( (i = find_job (cgid)) == NULL ) 
+            fprintf(stderr, "YASH FATAL:catch_TSTP: cgid %d not found\n", cgid); 
+        else {
+            i->paused = 1;
+            kill(- cgid, SIGTSTP);
+            fflush(stdout);
+            tcsetpgrp (STDIN_FILENO, yash_pgid);
+            //tcgetattr (STDIN_FILENO, &yash_modes);    // Restore shell's terminal modes.
+        }
+    }
+    fprintf(stdout, "\n");
+}
+
 void yash_init() {
     
     head_job = NULL;
-    
-    signal (SIGQUIT, SIG_IGN);  // Ignore interactive and job-control signals.     
-    signal (SIGTTIN, SIG_IGN);  // forked children signals will be set to default
-    signal (SIGTTOU, SIG_IGN);  // later (launch_proc)
-    signal (SIGCHLD, SIG_IGN);
 
-    if (signal(SIGINT, sig_int)   == SIG_ERR) printf("signal(SIGINT) error");
-    if (signal(SIGTSTP, sig_tstp) == SIG_ERR) printf("signal(SIGTSTP) error");    
+    if (signal(SIGINT, catch_INT) == SIG_ERR) printf("signal(SIGINT) error");
+    if (signal(SIGTSTP, catch_TSTP) == SIG_ERR) printf("signal(SIGTSTP) error");    
         
     yash_pgid = getpid ();                  // set yash group id
     if (setpgid (yash_pgid, yash_pgid) < 0) {
@@ -78,23 +93,3 @@ void yash_init() {
     tcsetpgrp (STDIN_FILENO, yash_pgid);        // grab terminal control
     //tcgetattr (STDIN_FILENO, &yash_modes);    // save default attrs
 }
-
-void new_job (job * nj, char * line) {
-
-        nj = malloc ( sizeof (job) );
-
-        job * curr = head_job;
-        if (curr != NULL)
-            while (curr->next != NULL)  
-                curr = curr->next;
-        
-        curr = nj;
-        nj->next = NULL;
-        nj->line = line ;
-        nj->cpgid = 0;
-        nj->paused = 0;
-        nj->status = 0;
-        nj->notified = 0;
-}
-
-

@@ -20,22 +20,23 @@
 typedef struct job {    
   struct job * next;    // next proc in pipe
   char * line;          // line
-  pid_t cpgid;          // child group ID
+  pid_t cpgid;          // child proc group ID
   int done;             // 1 if process completed
   int paused;           // 1 if process stopped
   int status;           // reported status value
   int notified;
-} job;
+  int in_bg;
+} job ;
+
 job * head_job;         // LL of jobs for accounting and signaling
 
-pid_t yash_pgid, cgid;
+pid_t yash_pgid, cgid;  // current group id in fg
 int send_to_bg; // & in cmd line
 int fwd, bck;   // fwd = out = fd for >; bck = in = fd for < 
 int pipfd[2];   // | in cmd line
 
 // looper.c
 void yash_init();
-void new_job (job * nj, char * line);
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
@@ -45,7 +46,7 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);     
 
 // executor.c 
-bool executor (char * cmds[], int pip, int out, int in, int count, job * j );
+bool executor (char * cmds[], int pip, int out, int in, int count, char * line );
 void exec_one (char * cmd[], job * j );
 void exec_bck (char * cmd[], char * f_in, job * j );
 void exec_fwd (char * cmd[], char * f_out, job * j );
@@ -56,6 +57,12 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j );
 void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j );
 
 // jobatron.c
+job * new_job (char * line);
+void log_job (pid_t pgid, job * j);
+void kill_jobs ();
+job * find_fg_job ();
+job * find_bg_job ();
+
 job * find_job (pid_t pgid);
 int stopped_job (job * j);
 int completed_job (job * j);
