@@ -65,6 +65,6 @@ bool valid (int pip, int out, int in) {     // CONSTRAINT CHECKING
     else if ( (out < pip) && out ) {
         printf("ERROR: invalid job: \'>\' followed by \'|\'\n");
         return false;
-    }    
+    }
     return true;
 }

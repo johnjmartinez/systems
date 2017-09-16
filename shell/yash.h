@@ -17,7 +17,7 @@
 
 // GLOBALS
 
-typedef struct job {    
+typedef struct job {
   struct job * next;    // next proc in pipe
   char * line;          // line
   pid_t cpgid;          // child proc group ID
@@ -32,7 +32,7 @@ job * head_job;         // LL of jobs for accounting and signaling
 
 pid_t yash_pgid, cgid;  // current group id in fg
 int send_to_bg; // in cmd line
-int fwd, bck;   // fwd = out = fd for >; bck = in = fd for < 
+int fwd, bck;   // fwd = out = fd for >; bck = in = fd for <
 int pipfd[2];   // | in cmd line
 
 // looper.c
@@ -43,9 +43,9 @@ bool tokenizer (char * line, char * _tokens[], int * count);
 
 // parser.c
 bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
-bool valid (int pip, int out, int in);     
+bool valid (int pip, int out, int in);
 
-// executor.c 
+// executor.c
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line );
 void exec_one (char * cmd[], job * j );
 void exec_bck (char * cmd[], char * f_in, job * j );
@@ -68,7 +68,7 @@ job * find_bg_job ();
 job * find_fg_job ();
 job * find_job (pid_t pgid);
 
-void job_list() ; 
+void job_list() ;
 void job_notify ();
 void kill_jobs ();
 void log_job (pid_t pgid, job * j);

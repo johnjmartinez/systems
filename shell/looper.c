@@ -25,16 +25,16 @@ int main(int argc, char *argv[]) {
             kill_jobs();
             return(0);
         }
-        
+
         tmp =  strdup (line);
         count = 0;
-        
+
         skip = tokenizer (tmp, _tokens, &count);
         if ( skip || (_tokens[0]==NULL) ) {
             continue;
             free (tmp);
         }
-    
+
         pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
         skip = parser (_tokens, &pipe_pos, &fwd_pos, &bck_pos);
         if (skip) {

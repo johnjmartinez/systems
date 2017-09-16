@@ -4,7 +4,7 @@
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
 job * new_job (char * line) {
-        
+
         line[strlen(line)-1] = '\0';    // get rid of '\n'
         job * nj = (job *) malloc ( sizeof (job) );
         nj->line = strdup(line);
@@ -15,7 +15,7 @@ job * new_job (char * line) {
         nj->in_bg = 0;
         nj->next = head_job;
 
-        /*job * curr = head_job;        //back of list --- not using 
+        /*job * curr = head_job;        //back of list --- not using
         if (curr != NULL) {
             while (curr->next != NULL)
                 curr = curr->next;

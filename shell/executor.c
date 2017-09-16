@@ -47,28 +47,28 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
         }
     }
 
-    else if ( !pip && !out && !in )     // NO REDIRECTS
+    else if ( !pip && !out && !in )                             // NO REDIRECTS
         exec_one ( cmds, new_job(line) );
 
-    else if ( !pip && out && !in )      // only out > REDIRECT
+    else if ( !pip && out && !in )                              // only out > REDIRECT
         exec_fwd ( cmds, cmds[out+1], new_job(line) );
 
-    else if ( !pip && !out && in )      // only in < REDIRECT
+    else if ( !pip && !out && in )                              // only in < REDIRECT
         exec_bck ( cmds, cmds[in+1], new_job(line) );
 
-    else if ( pip && !out && !in )      // only pipe | REDIRECT
+    else if ( pip && !out && !in )                              // only pipe | REDIRECT
         exec_pipe ( &cmds[0], &cmds[pip+1], new_job(line) );
 
-    else if ( !pip && out && in )       // both in/out, no pipe REDIRECT
+    else if ( !pip && out && in )                               // both in/out, no pipe REDIRECT
         exec_in_out ( cmds, cmds[in+1], cmds[out+1], new_job(line) );
 
-    else if ( pip && out && in )        // both in/out w/ pipe REDIRECT
+    else if ( pip && out && in )                                // both in/out w/ pipe REDIRECT
         exec_in_pipe_out ( &cmds[0], &cmds[pip+1], cmds[in+1], cmds[out+1], new_job(line) );
 
-    else if ( pip && !out && in )       // in w/ pipe REDIRECT
+    else if ( pip && !out && in )                               // in w/ pipe REDIRECT
         exec_in_pipe ( &cmds[0], &cmds[pip+1], cmds[in+1], new_job(line) );
 
-    else if ( pip && out && !in )       // out w/ pipe REDIRECT
+    else if ( pip && out && !in )                               // out w/ pipe REDIRECT
         exec_pipe_out ( &cmds[0], &cmds[pip+1], cmds[out+1], new_job(line) );
 
     return false;
