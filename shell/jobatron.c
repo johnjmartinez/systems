@@ -1,12 +1,22 @@
 #include "yash.h"
 
+void copy_string(char *target, char *source) {
+   while (*source) {
+      *target = *source;
+      source++;
+      target++;
+   }
+   *target = '\0';
+}
+
 // The following is heavily influenced by
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
 job * new_job (char * line) {
 
         job * nj = (job *) malloc ( sizeof (job) );
-        nj->line = line ;
+        nj->line = (char *) malloc (sizeof (char) * strlen(line));
+        strcpy (nj->line, line);
         nj->cpgid = 0;
         nj->paused = 0;
         nj->status = 0;
@@ -25,6 +35,7 @@ job * new_job (char * line) {
 
         return nj;
 }
+
 
 void log_job (pid_t pgid, job * j) {
     int status;
@@ -80,8 +91,8 @@ void job_list() {
     job * j;
     for (j = head_job; j; j = j->next) {
 
-        //fprintf(stdin, "[%d] -  %s\t%s", j->cpgid, status_update(j), j->line);
-        fprintf(stdin, "[%d] -  %d\t%s", j->cpgid, j->status, j->line);
+        //fprintf(stdout, "[%d] -  %s\t%s", j->cpgid, status_update(j), j->line);
+        fprintf(stdout, "[%d] -  %d\t%s\n", j->cpgid, j->status, j->line);
         
     }
 }
