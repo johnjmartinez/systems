@@ -61,9 +61,8 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
 job * new_job (char * line);
 
 char * get_status_str (job * j);
-int done_job (job * j);
 int mark_job_status (pid_t pid, int status);
-int paused_job (job * j);
+int running_job (job * j);
 
 job * find_bg_job ();
 job * find_fg_job ();

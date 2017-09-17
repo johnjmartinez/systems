@@ -11,6 +11,7 @@ job * new_job (char * line) {
         nj->cpgid = 0;
         nj->paused = 0;
         nj->status = 0;
+        nj->notified = 0;
         nj->in_bg = 0;
         nj->next = head_job;
 

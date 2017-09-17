@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 
     while(1) {
 
-        //job_notify();
+        job_notify();
         sleep(0.1);
 
         fprintf(stdout, "# ");
