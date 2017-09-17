@@ -23,7 +23,6 @@ job * new_job (char * line) {
         }
         else*/
         head_job = nj;                  // front of list (push)
-
         return nj;
 }
 
@@ -80,23 +79,30 @@ job * find_bg_job () {  // Find newest job->paused
 
 void job_list() {
     job * j;
-    for (j = head_job; j; j = j->next) {
+    update_status ();   // Update status info for jobs
 
-        fprintf(stdout, "[%d] -  %s\t%s\n", j->cpgid, status_update(j), j->line);
+    for (j = head_job; j; j = j->next) {
         // fprintf(stdout, "[%d] -  %d\t%s\n", j->cpgid, j->status, j->line);
+        print_job_info(j, get_status_str(j));
+        j->notified = 1;
     }
 }
 
-char * status_update (job * j) {
+char * get_status_str (job * j) {
 
     int status = j->status;
     if (WIFSTOPPED (status)) {
         j->paused = 1;
-        return "Stopped";
+        if (!j->in_bg)
+            print_job_info (j, "Stopped");
+        else 
+            print_job_info (j, "Running");
     }
+    
     j->done = 1;
-    if (WIFSIGNALED (status))
-        fprintf (stderr, "%d: killed by %d\n", j->cpgid, WTERMSIG (j->status));
+    if (WIFSIGNALED (status)) 
+        return "Killed ";
+        //fprintf (stderr, "%d: killed by %d\n", j->cpgid, WTERMSIG (j->status));
 
     return "Done   ";
 }
@@ -124,7 +130,7 @@ int done_job (job * j) {        // 1 if job's done.
 int mark_job_status (pid_t pid, int status) {
 
     job * j;
-    if (pid > 0) {              // Update proc record
+    if (pid > 0) {              // Update proc records
         for (j = head_job; j; j = j->next) {
             if (j->cpgid == pid) {
 
@@ -133,8 +139,6 @@ int mark_job_status (pid_t pid, int status) {
                     j->paused = 1;
                 else {
                     j->done = 1;
-                    if (WIFSIGNALED (status))
-                        fprintf (stderr, "%d: killed by %d\n", (int) pid, WTERMSIG (j->status));
                 }
                 return 0;
             }
@@ -159,17 +163,10 @@ void update_status () {
     } while (!mark_job_status (pid, status));
 }
 
-void wait_for_job (job * j) {
-    int status;
-    pid_t pid;
-
-    do {
-        pid = waitpid (WAIT_ANY, &status, WUNTRACED);
-    } while (!mark_job_status (pid, status) && !paused_job (j) && !done_job (j));
-}
-
 void print_job_info (job * j, const char * status) {
-    fprintf (stderr, "%ld (%s): %s\n", (long)j->cpgid, status, j->line);
+
+    fprintf(stdout, "[%d] -  %s\t%s\t", j->cpgid, status, j->line);
+    //fprintf (stderr, "%ld (%s): %s\n", (long)j->cpgid, status, j->line);
 }
 
 void job_notify () {
@@ -183,13 +180,19 @@ void job_notify () {
         jnext = j->next;
 
         if (done_job (j)) {                         // notify about & delete done job
-            print_job_info (j, "done");
+        
+            if (!j->notified)   
+                print_job_info (j, "Done   ");
             if (jlast) jlast->next = jnext;
             else  head_job = jnext;
             free (j);
         }
         else if (paused_job (j) && !j->notified) {  // notify about paused job
-            print_job_info (j, "paused");
+            
+            if (!j->in_bg)
+                print_job_info (j, "Stopped");
+            else 
+                print_job_info (j, "Running");
             j->notified = 1;
             jlast = j;
         }

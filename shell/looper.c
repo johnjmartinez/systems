@@ -31,20 +31,20 @@ int main(int argc, char *argv[]) {
 
         skip = tokenizer (tmp, _tokens, &count);
         if ( skip || (_tokens[0]==NULL) ) {
-            continue;
             free (tmp);
+            continue;
         }
 
         pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
         skip = parser (_tokens, &pipe_pos, &fwd_pos, &bck_pos);
         if (skip) {
-            continue;
             free (tmp);
+            continue;
         }
 
         if (!valid (pipe_pos, fwd_pos, bck_pos)) {
-            continue;
             free (tmp);
+            continue;
         }
 
         // DEBUG printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);

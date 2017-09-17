@@ -31,9 +31,9 @@ typedef struct job {
 job * head_job;         // LL of jobs for accounting and signaling
 
 pid_t yash_pgid, cgid;  // current group id in fg
-int send_to_bg; // in cmd line
-int fwd, bck;   // fwd = out = fd for >; bck = in = fd for <
-int pipfd[2];   // | in cmd line
+int send_to_bg;         // in cmd line
+int fwd, bck;           // fwd = out = fd for >; bck = in = fd for <
+int pipfd[2];           // | in cmd line
 
 // looper.c
 void yash_init();
@@ -47,6 +47,7 @@ bool valid (int pip, int out, int in);
 
 // executor.c
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line );
+
 void exec_one (char * cmd[], job * j );
 void exec_bck (char * cmd[], char * f_in, job * j );
 void exec_fwd (char * cmd[], char * f_out, job * j );
@@ -59,7 +60,7 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
 // jobatron.c
 job * new_job (char * line);
 
-char * status_update (job * j);
+char * get_status_str (job * j);
 int done_job (job * j);
 int mark_job_status (pid_t pid, int status);
 int paused_job (job * j);
@@ -71,7 +72,6 @@ job * find_job (pid_t pgid);
 void job_list() ;
 void job_notify ();
 void kill_jobs ();
-void log_job (pid_t pgid, job * j);
+void log_job (pid_t pgid, job * j); // waitpid
 void print_job_info (job * j, const char * status);
 void update_status ();
-void wait_for_job (job * j);

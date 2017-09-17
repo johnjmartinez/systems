@@ -33,7 +33,6 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
         kill(- i->cpgid, SIGCONT);
     }
     else if ( (count==1) && (strncmp (cmds[0],"jobs",4)==0) ) {  // JOBS
-        update_status ();
         job_list ();
     }
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                  // CD -- chdir ()
