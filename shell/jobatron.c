@@ -14,17 +14,9 @@ job * new_job (char * line) {
         nj->in_bg = 0;
         nj->next = head_job;
 
-        /*job * curr = head_job;        // back of list --- not using
-        if (curr != NULL) {
-            while (curr->next != NULL)
-                curr = curr->next;
-            curr->next = nj;
-        }
-        else*/
         head_job = nj;                  // front of list (push)
         return nj;
 }
-
 
 void log_job (pid_t pgid, job * j) {
     int status;
@@ -32,13 +24,12 @@ void log_job (pid_t pgid, job * j) {
 
     if (!send_to_bg ) {
         cgid = pgid;
-        waitpid (pgid, &status, WUNTRACED ); // | WCONTINUED);
-        j->status = status;     /*DEBUG*/ printf("-!&: status %d of %d\n", status, pgid);
+        waitpid (pgid, &status, WUNTRACED ); 
+        j->status = status;     
+        // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);
     }
     else {
         j->in_bg = 1;
-        // waitpid (pgid, &status, WUNTRACED | WNOHANG ); //  | WCONTINUED);
-        // j->status = status;     /*DEBUG*/ printf("- &: status %d\n", status);
     }
 }
 
@@ -57,11 +48,12 @@ void job_notify () {                    // a.k.a. 'jobs'
             if (j->in_bg)  
                  print_job_info (j, "Done   ");
                  
+            /* -- can't find bug with marking jobs
             if (jprev) 
                 jprev->next = jnext;
             else  
                 head_job = jnext;
-            free (j);
+            free (j);*/
         }
         else                                        
             jprev = j;
@@ -69,13 +61,50 @@ void job_notify () {                    // a.k.a. 'jobs'
 }
 
 void update_status () {
-    int status;
-    pid_t pid;
 
-    do {
-        pid = waitpid (WAIT_ANY, &status, WUNTRACED | WCONTINUED | WNOHANG ); 
-        /*DEBUG*/ if (pid>0) printf("-update: status %d of %d\n", status, pid);
-    } while (!mark_job_status (pid, status));
+    int status;
+    job * j;
+    for (j = head_job; j; j = j->next) {
+    
+        waitpid (j->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG); 
+        j->status = status;
+        
+        //if ( WIFSTOPPED (status) && !WIFCONTINUED (status) ) j->paused = 1;
+        if ( WIFEXITED (status) || WIFSIGNALED (status) ) 
+            if(!j->paused) j->done = 1;
+        // /*DEBUG*/ printf("-update: status %d of %d\n", status, j->cpgid);
+    }
+}
+
+void job_list() {
+    job * j;
+    update_status ();   // update status info for jobs
+
+    for (j = head_job; j; j = j->next) {
+        if (j->in_bg) 
+            print_job_info(j, get_status_str(j));
+    }
+}
+
+void job_list_all() {
+    job * j;
+    fprintf(stdout, "DEBUG\n");
+    for (j = head_job; j; j = j->next) {
+        print_job_info(j, get_status_str(j));
+    }
+}
+
+char * get_status_str (job * j) {
+
+    if (WIFSTOPPED (j->status)) return "Stopped";
+    return "Running";
+}
+
+
+int running_job (job * j) {     // 1 if job's running 
+
+    if (!j->done && !j->paused) return 0;
+    return 1;
 }
 
 void kill_jobs () {
@@ -92,6 +121,15 @@ void kill_jobs () {
         kill(- curr->cpgid, SIGINT);
         free(curr);
     }
+}
+
+job * find_job (pid_t pgid) {   // find active job using pgid.
+
+  job * j;
+  for (j = head_job; j; j = j->next)
+    if (j->cpgid == pgid) return j;
+
+  return NULL;
 }
 
 job * find_fg_job () {  // find newest job->paused/in_bg
@@ -112,80 +150,7 @@ job * find_bg_job () {  // find newest job->paused
     return NULL;
 }
 
-void job_list() {
-    job * j;
-    update_status ();   // update status info for jobs
-
-    for (j = head_job; j; j = j->next) {
-        if (j->in_bg) 
-            print_job_info(j, get_status_str(j));
-    }
-}
-
-void job_list_all() {
-    job * j;
-
-    for (j = head_job; j; j = j->next) {
-        print_job_info(j, get_status_str(j));
-    }
-}
-
-
-
-char * get_status_str (job * j) {
-
-    if (WIFSTOPPED (j->status)) {
-        // j->paused = 1;       // may be redundant?
-        return "Stopped";
-    }
-    return "Running";
-}
-
-
-job * find_job (pid_t pgid) {   // find active job using pgid.
-
-  job * j;
-  for (j = head_job; j; j = j->next)
-    if (j->cpgid == pgid) return j;
-
-  return NULL;
-}
-
-int running_job (job * j) {     // 1 if job's running 
-
-    if (!j->done && !j->paused) return 0;
-    return 1;
-}
-
-int mark_job_status (pid_t pid, int status) {
-
-    job * j;
-    if (pid > 0) {              // update proc records
-        for (j = head_job; j; j = j->next) {
-            if (j->cpgid == pid) {
-
-                j->status = status;
-                if (WIFSTOPPED(status) && !WIFCONTINUED(status) )
-                    j->paused = 1;
-                if ( WIFEXITED(status) || WIFSIGNALED(status) )                
-                    j->done = 1;
-                return 0;
-            }
-        }
-        return -1;
-    }
-    else if (pid == 0 || errno == ECHILD)
-        return -1;              // No procs ready to report
-    else {
-        perror ("waitpid");
-        return -1;
-    }
-}
-
-
 void print_job_info (job * j, const char * status) {
-
     fprintf(stdout, "[%d] -  %s\t%s\n", j->cpgid, status, j->line);
-    //fprintf (stderr, "%ld (%s): %s\n", (long)j->cpgid, status, j->line);
 }
 

@@ -29,17 +29,17 @@
     return immediately if no child has exited.
 'WUNTRACED'   
     return if a child has stopped (but not traced via ptrace(2)).  
-    Status for traced children which have stopped is provided even if this option is not specified.
+    Status for traced children which have stopped is provided 
 'WCONTINUED'  
     return if a stopped child has been resumed by delivery of SIGCONT.
 
 # W*(status) check
 'WIFEXITED'
-    returns true if child terminated normally by calling exit(3) or _exit(2), or by returning from main().
+    returns true if child terminated normally
 'WIFCONTINUED'
-    returns true if child process was resumed by delivery of SIGCONT.
+    returns true if child was resumed by delivery of SIGCONT
 'WIFSIGNALED'
-    returns true if child process was terminated by a signal.
+    returns true if child was terminated by a signal
 'WIFSTOPPED'
-    returns true if child process was stopped by delivery of a signal; 
+    returns true if child was stopped by delivery of a signal; 
     this is possible only if call was done using  WUNTRACED

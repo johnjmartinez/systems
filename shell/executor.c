@@ -16,24 +16,27 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
 
         cgid = i->cpgid;
         i->in_bg = 0;
+        i->paused = 0;
         kill (- i->cpgid, SIGCONT);
-        waitpid (- i->cpgid, &status, WUNTRACED); // | WCONTINUED);
-        i->status = status;     /*DEBUG*/ printf("-fg: status %d of %d\n", status, cgid);
+        waitpid (- i->cpgid, &status, WUNTRACED); 
+        i->status = status;     
+        // /*DEBUG*/ printf("fg: status %d of %d\n", status, cgid);
     }
     else if ( (count==1) && (strncmp (cmds[0],"bg",2)==0) ) {   // BG !wait for completion
 
         job * i;
-        if ( (i = find_fg_job ()) == NULL ) return false;
+        if ( (i = find_bg_job ()) == NULL ) return false;
+        if (pip) return false;                                  // not for pipes
 
         cgid = 0;
         i->in_bg = 1;
+        i->paused = 0;
         kill (- i->cpgid, SIGCONT);
-        // waitpid (- i->cpgid, &status, WUNTRACED | WNOHANG | WCONTINUED);
-        // i->status = status;     /*DEBUG*/ printf("-bg: status %d", status);
     }
-    else if ( (count==1) && (strncmp (cmds[0],"jobs",4)==0) ) { // JOBS
-        job_list ();
-    }
+    else if ( (strncmp (cmds[0],"jobs",4)==0) ) {               // JOBS
+         if (count==1) job_list ();
+         else job_list_all ();
+    }    
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                 // CD -- chdir ()
         if ( count==2 ) {                                       // TODO:
             if (chdir (cmds[1]) != 0)                           // update env $*WD
