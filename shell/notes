@@ -5,7 +5,7 @@
  + GNU99 C CODE
  + signal handler for main process and child process should be different.
 
-# BUILTINS
+# BUILTINS / REDIRECTS
  - fg : only token in line? --- wait for job completion
  - bg : only token in line? -- !wait for job completion 
  - > : followed by file, redirect STDOUT
@@ -14,13 +14,32 @@
  - jobs : only token in line?
  - & : last token in line ALWAYS, only one -- !wait for job completion
  - | : only one in line separates two commands 
- use boolean flag for each and check invalid combination cases
+ use boolean flag for each and check invalid combination cases?
  
 # BEHAVIOR 
  * after read line check if any job exited ... print to STDOUT if so
  * two commands max (if not using |, only one) per job
  * no STDERR redirects
  * command + args + redirects if any 
- * only one <, and if necessary before  |
+ * only one <, and if necessary only before |
  * only one >, and if necessary only after |
  
+# waitpid()
+'WNOHANG'   
+    return immediately if no child has exited.
+'WUNTRACED'   
+    return if a child has stopped (but not traced via ptrace(2)).  
+    Status for traced children which have stopped is provided even if this option is not specified.
+'WCONTINUED'  
+    return if a stopped child has been resumed by delivery of SIGCONT.
+
+# W*(status) check
+'WIFEXITED'
+    returns true if child terminated normally by calling exit(3) or _exit(2), or by returning from main().
+'WIFCONTINUED'
+    returns true if child process was resumed by delivery of SIGCONT.
+'WIFSIGNALED'
+    returns true if child process was terminated by a signal.
+'WIFSTOPPED'
+    returns true if child process was stopped by delivery of a signal; 
+    this is possible only if call was done using  WUNTRACED

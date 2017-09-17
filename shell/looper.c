@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // DEBUG printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
+        // /*DEBUG*/ printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
         executor (_tokens, pipe_pos, fwd_pos, bck_pos, count, line);
         free (tmp);
 

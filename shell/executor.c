@@ -5,39 +5,38 @@ int cid1, cid2, status;
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line ) {
 
     fflush (0);
-    if (pip) cmds[pip] = NULL;
-    if (in)  cmds[in]  = NULL;
-    if (out) cmds[out] = NULL;
 
     send_to_bg = (strncmp (cmds[count-1],"&",1) == 0);
     if (send_to_bg) cmds[count-1] = NULL;
 
-    if ( (count==1) && (strncmp (cmds[0],"fg",2)==0) ) {         // FG wait for completion
+    if ( (count==1) && (strncmp (cmds[0],"fg",2)==0) ) {        // FG wait for completion
 
         job * i;
         if ( (i = find_fg_job ()) == NULL ) return false;
 
         cgid = i->cpgid;
         i->in_bg = 0;
-        kill(- i->cpgid, SIGCONT);
-        waitpid(- i->cpgid, &status, WUNTRACED );
-        i->status = status;
+        kill (- i->cpgid, SIGCONT);
+        waitpid (- i->cpgid, &status, WUNTRACED); // | WCONTINUED);
+        i->status = status;     /*DEBUG*/ printf("-fg: status %d of %d\n", status, cgid);
     }
-    else if ( (count==1) && (strncmp (cmds[0],"bg",2)==0) ) {    // BG !wait for completion
+    else if ( (count==1) && (strncmp (cmds[0],"bg",2)==0) ) {   // BG !wait for completion
 
         job * i;
         if ( (i = find_fg_job ()) == NULL ) return false;
 
         cgid = 0;
         i->in_bg = 1;
-        kill(- i->cpgid, SIGCONT);
+        kill (- i->cpgid, SIGCONT);
+        // waitpid (- i->cpgid, &status, WUNTRACED | WNOHANG | WCONTINUED);
+        // i->status = status;     /*DEBUG*/ printf("-bg: status %d", status);
     }
-    else if ( (count==1) && (strncmp (cmds[0],"jobs",4)==0) ) {  // JOBS
+    else if ( (count==1) && (strncmp (cmds[0],"jobs",4)==0) ) { // JOBS
         job_list ();
     }
-    else if ( (strncmp (cmds[0],"cd",2)==0) ) {                  // CD -- chdir ()
-        if ( count==2 ) {                                        // TODO:
-            if (chdir (cmds[1]) != 0)                            // update env $*WD
+    else if ( (strncmp (cmds[0],"cd",2)==0) ) {                 // CD -- chdir ()
+        if ( count==2 ) {                                       // TODO:
+            if (chdir (cmds[1]) != 0)                           // update env $*WD
                 perror ("yash");
         }
         else if ( count==1 ) {
@@ -45,31 +44,35 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
                 perror ("yash");
         }
     }
+    else {                                                      // ACTUAL COMMAND 
+        if (pip) cmds[pip] = NULL;
+        if (in)  cmds[in]  = NULL;
+        if (out) cmds[out] = NULL;
 
-    else if ( !pip && !out && !in )                             // NO REDIRECTS
-        exec_one ( cmds, new_job(line) );
+        if ( !pip && !out && !in )                              // NO REDIRECTS
+            exec_one ( cmds, new_job(line) );
 
-    else if ( !pip && out && !in )                              // only out > REDIRECT
-        exec_fwd ( cmds, cmds[out+1], new_job(line) );
+        else if ( !pip && out && !in )                          // only out > REDIRECT
+            exec_fwd ( cmds, cmds[out+1], new_job(line) );
 
-    else if ( !pip && !out && in )                              // only in < REDIRECT
-        exec_bck ( cmds, cmds[in+1], new_job(line) );
+        else if ( !pip && !out && in )                          // only in < REDIRECT
+            exec_bck ( cmds, cmds[in+1], new_job(line) );
 
-    else if ( pip && !out && !in )                              // only pipe | REDIRECT
-        exec_pipe ( &cmds[0], &cmds[pip+1], new_job(line) );
+        else if ( pip && !out && !in )                          // only pipe | REDIRECT
+            exec_pipe ( &cmds[0], &cmds[pip+1], new_job(line) );
 
-    else if ( !pip && out && in )                               // both in/out, no pipe REDIRECT
-        exec_in_out ( cmds, cmds[in+1], cmds[out+1], new_job(line) );
+        else if ( !pip && out && in )                           // both in/out, no pipe REDIRECT
+            exec_in_out ( cmds, cmds[in+1], cmds[out+1], new_job(line) );
 
-    else if ( pip && out && in )                                // both in/out w/ pipe REDIRECT
-        exec_in_pipe_out ( &cmds[0], &cmds[pip+1], cmds[in+1], cmds[out+1], new_job(line) );
+        else if ( pip && out && in )                            // both in/out w/ pipe REDIRECT
+            exec_in_pipe_out ( &cmds[0], &cmds[pip+1], cmds[in+1], cmds[out+1], new_job(line) );
 
-    else if ( pip && !out && in )                               // in w/ pipe REDIRECT
-        exec_in_pipe ( &cmds[0], &cmds[pip+1], cmds[in+1], new_job(line) );
+        else if ( pip && !out && in )                           // in w/ pipe REDIRECT
+            exec_in_pipe ( &cmds[0], &cmds[pip+1], cmds[in+1], new_job(line) );
 
-    else if ( pip && out && !in )                               // out w/ pipe REDIRECT
-        exec_pipe_out ( &cmds[0], &cmds[pip+1], cmds[out+1], new_job(line) );
-
+        else if ( pip && out && !in )                           // out w/ pipe REDIRECT
+            exec_pipe_out ( &cmds[0], &cmds[pip+1], cmds[out+1], new_job(line) );
+    }
     return false;
 }
 
@@ -179,9 +182,9 @@ void exec_pipe (char * cmd1[], char * cmd2[], job * j) {
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1"); _exit(1);
     }
-    else {              // _PARENT
+    else {                  // _PARENT
 
-        close (pipfd[1]);    // done by both parent and child2
+        close (pipfd[1]);   // done by both parent and child2
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
 
         else if (!cid2) {   // CHILD_2
@@ -208,7 +211,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j) {
 
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
 
-    else if (!cid1) {   // CHILD_1
+    else if (!cid1) {       // CHILD_1
 
         //setsid();
 		cgid = getpid ();
@@ -224,9 +227,9 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j) {
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1"); _exit(1);
     }
-    else {              // _PARENT
+    else {                  // _PARENT
 
-        close (pipfd[1]);    // done by both parent and child2
+        close (pipfd[1]);   // done by both parent and child2
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
 
         else if (!cid2) {   // CHILD_2
@@ -256,7 +259,7 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j) {
 
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
 
-    else if (!cid1) {   // CHILD_1
+    else if (!cid1) {       // CHILD_1
 
         //setsid();
 		cgid = getpid ();
@@ -275,9 +278,9 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j) {
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1"); _exit(1);
     }
-    else {              // _PARENT
+    else {                  // _PARENT
 
-        close (pipfd[1]);    // done by both parent and child2
+        close (pipfd[1]);   // done by both parent and child2
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
 
         else if (!cid2) {   // CHILD_2
@@ -304,7 +307,7 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
 
     if ( (cid1=fork ()) < 0 ) perror ("ERROR: fork1 failed");
 
-    else if (!cid1) {   // CHILD_1
+    else if (!cid1) {       // CHILD_1
 
         //setsid();
 		cgid = getpid ();
@@ -323,9 +326,9 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
         execvp (cmd1[0], cmd1);
         perror ("ERROR_1"); _exit(1);
     }
-    else {              // _PARENT
+    else {                  // _PARENT
 
-        close (pipfd[1]);    // done by both parent and child2
+        close (pipfd[1]);   // done by both parent and child2
         if ( (cid2=fork ()) < 0 ) perror ("ERROR: fork2 failed");
 
         else if (!cid2) {   // CHILD_2

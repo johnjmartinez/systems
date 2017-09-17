@@ -13,7 +13,7 @@ bool tokenizer (char * line, char * _tokens[], int * count) {
     // char * tmp =  strdup (line);
     // char * tmp =  malloc (strlen(line)); memcpy (tmp, line, strlen(line));
     // line[strlen(line)-1] = '\0';
-    // DEBUG printf("BEFORE\ntmp::%s::\nlne::%s::\n", tmp, line);
+    // /*DEBUG*/ printf("BEFORE\ntmp::%s::\nlne::%s::\n", tmp, line);
 
     char * pointer = strtok(line, DELIM);   // strtok destroys string
     do {
@@ -22,8 +22,8 @@ bool tokenizer (char * line, char * _tokens[], int * count) {
 
     _tokens[i] = NULL;                      // make last token/cmd_arg NULL
     * count = i;
-    // DEBUG printf("AFTER\ntmp::%s::\nlne::%s::\n", tmp, line);
-    // free(tmp);                           // if free tmp, tokens get lost
+    // /*DEBUG*/ printf("AFTER\ntmp::%s::\nlne::%s::\n", tmp, line);
+    // free(tmp);                           // if free tmp, tokens get lost -- moved to main()
 
     return false;
 }

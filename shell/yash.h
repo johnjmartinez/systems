@@ -22,9 +22,8 @@ typedef struct job {
   char * line;          // line
   pid_t cpgid;          // child proc group ID
   int done;             // 1 if process completed
-  int paused;           // 1 if process stopped
+  int paused;           // 1 if process stopped at any point
   int status;           // reported status value
-  int notified;
   int in_bg;
 } job ;
 
@@ -46,7 +45,7 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);
 
 // executor.c
-bool executor (char * cmds[], int pip, int out, int in, int count, char * line );
+bool executor (char * cmds[], int pip, int out, int in, int count, char * line ); // waitpid
 
 void exec_one (char * cmd[], job * j );
 void exec_bck (char * cmd[], char * f_in, job * j );
@@ -69,6 +68,7 @@ job * find_fg_job ();
 job * find_job (pid_t pgid);
 
 void job_list() ;
+void job_list_all() ;
 void job_notify ();
 void kill_jobs ();
 void log_job (pid_t pgid, job * j); // waitpid
