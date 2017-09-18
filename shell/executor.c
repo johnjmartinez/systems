@@ -19,8 +19,8 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
         i->in_bg = 0;
         i->paused = 0;
         
-        kill (- i->cpgid, SIGCONT);
-        rc = waitpid (- i->cpgid, &status, WUNTRACED  | WCONTINUED ) ; 
+        kill (i->cpgid, SIGCONT);
+        rc = waitpid (i->cpgid, &status, WUNTRACED); 
         if (rc > 0) 
             i->status = status;     
     }
@@ -35,8 +35,8 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
         i->in_bg = 1;
         i->paused = 0;
         
-        kill (- i->cpgid, SIGCONT);
-        rc = waitpid (- i->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG ); 
+        kill (i->cpgid, SIGCONT);
+        rc = waitpid (i->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG); 
         if (rc > 0) 
             i->status = status;  
     }

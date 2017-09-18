@@ -25,7 +25,7 @@ void log_job (pid_t pgid, job * j) {
 
     if (!send_to_bg ) {
         cgid = pgid;
-        rc = waitpid (- j->cpgid, &status, WUNTRACED  | WCONTINUED ) ; 
+        rc = waitpid (- j->cpgid, &status, WUNTRACED  ) ; 
         if (rc > 0) 
             j->status = status;     
         // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);
@@ -72,7 +72,7 @@ void update_status () {
     job * j;
     for (j = head_job; j; j = j->next) {
         
-        int rc = waitpid ( j->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG );
+        int rc = waitpid (j->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG );
         
         // /*DEBUG*/ //usr/include/x86_64-linux-gnu/bits/waitflags.h 
         // /*DEBUG*/ //usr/include/x86_64-linux-gnu/sys/wait.h

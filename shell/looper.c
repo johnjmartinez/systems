@@ -63,7 +63,7 @@ static void catch_INT (int signo) { // ctrl+c
             fprintf(stderr, "YASH catch_INT: cgid %d not found\n", cgid);
         else {
             i->done = 1;
-            kill(- cgid, SIGINT);
+            kill(cgid, SIGINT);
             fflush(stdout);
         }
     }
@@ -79,7 +79,7 @@ static void catch_TSTP(int signo) {   // ctrl+z
             fprintf(stderr, "YASH catch_TSTP: cgid %d not found\n", cgid);
         else {
             i->paused = 1;
-            kill(- cgid, SIGTSTP);
+            kill(cgid, SIGTSTP);
             fflush(stdout);
             tcsetpgrp (STDIN_FILENO, yash_pgid);
             //tcgetattr (STDIN_FILENO, &yash_modes);    // Restore shell's terminal modes.
