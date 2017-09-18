@@ -60,7 +60,7 @@ static void catch_INT (int signo) { // ctrl+c
     job * i;
     if (cgid) {
         if ( (i = find_job (cgid)) == NULL )
-            fprintf(stderr, "YASH FATAL:catch_INT: cgid %d not found\n", cgid);
+            fprintf(stderr, "YASH catch_INT: cgid %d not found\n", cgid);
         else {
             i->done = 1;
             kill(- cgid, SIGINT);
@@ -76,7 +76,7 @@ static void catch_TSTP(int signo) {   // ctrl+z
     job * i;
     if (cgid) {
         if ( (i = find_job (cgid)) == NULL )
-            fprintf(stderr, "YASH FATAL:catch_TSTP: cgid %d not found\n", cgid);
+            fprintf(stderr, "YASH catch_TSTP: cgid %d not found\n", cgid);
         else {
             i->paused = 1;
             kill(- cgid, SIGTSTP);

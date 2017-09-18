@@ -59,8 +59,10 @@ void job_notify () {                    // a.k.a. 'jobs'
                 head_job = jnext;
             free (j);
         }
-        else                                        
-            jprev = j;
+        if (j->paused)
+            print_job_info (j, "Stopped);
+             
+        jprev = j;
     }
 }
 

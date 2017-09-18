@@ -15,14 +15,14 @@
 #define O_FOUT O_WRONLY|O_CREAT|O_TRUNC
 #define O_FIN  O_RDONLY
 
-// GLOBALS
+// SHELL GLOBALS
 
 typedef struct job {
   struct job * next;    // next proc in pipe
   char * line;          // line
   pid_t cpgid;          // child proc group ID
-  int done;             // 1 if process completed
-  int paused;           // 1 if process stopped at any point
+  int done;             // 1 if process terminated
+  int paused;           // 1 if process stopped
   int status;           // last reported status value
   int in_bg;
 } job ;
