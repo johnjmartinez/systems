@@ -49,7 +49,6 @@ int main(int argc, char *argv[]) {
         // /*DEBUG*/ printf ("p:%i f:%i b:%i cnt:%i\n", pipe_pos, fwd_pos, bck_pos, count);
         executor (_tokens, pipe_pos, fwd_pos, bck_pos, count, line);
         free (tmp);
-
     }
     printf("\n");
     return(1);

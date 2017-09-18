@@ -23,7 +23,7 @@ typedef struct job {
   pid_t cpgid;          // child proc group ID
   int done;             // 1 if process completed
   int paused;           // 1 if process stopped at any point
-  int status;           // reported status value
+  int status;           // last reported status value
   int in_bg;
 } job ;
 
@@ -72,4 +72,4 @@ void job_notify ();
 void kill_jobs ();
 void log_job (pid_t pgid, job * j); // waitpid
 void print_job_info (job * j, const char * status);
-void update_status (); // waitpid
+void update_status ();

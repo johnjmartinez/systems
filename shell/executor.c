@@ -1,6 +1,6 @@
 #include "yash.h"
 
-int cid1, cid2, status;
+int cid1, cid2, status, rc;
 
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line ) {
 
@@ -13,14 +13,16 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
 
         job * i;
         if ( (i = find_fg_job ()) == NULL ) return false;
-
+        
+        status = 1;
         cgid = i->cpgid;
         i->in_bg = 0;
         i->paused = 0;
+        
         kill (- i->cpgid, SIGCONT);
-        waitpid (- i->cpgid, &status, WUNTRACED); 
-        i->status = status;     
-        // /*DEBUG*/ printf("fg: status %d of %d\n", status, cgid);
+        rc = waitpid (- i->cpgid, &status, WUNTRACED  | WCONTINUED ) ; 
+        if (rc > 0) 
+            i->status = status;     
     }
     else if ( (count==1) && (strncmp (cmds[0],"bg",2)==0) ) {   // BG !wait for completion
 
@@ -28,10 +30,15 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
         if ( (i = find_bg_job ()) == NULL ) return false;
         if (pip) return false;                                  // not for pipes
 
+        status = 1;
         cgid = 0;
         i->in_bg = 1;
         i->paused = 0;
+        
         kill (- i->cpgid, SIGCONT);
+        rc = waitpid (- i->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG ); 
+        if (rc > 0) 
+            i->status = status;  
     }
     else if ( (strncmp (cmds[0],"jobs",4)==0) ) {               // JOBS
          if (count==1) job_list ();

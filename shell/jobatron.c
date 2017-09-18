@@ -9,8 +9,9 @@ job * new_job (char * line) {
         job * nj = (job *) malloc ( sizeof (job) );
         nj->line = strdup(line);
         nj->cpgid = 0;
+        nj->done = 0;
         nj->paused = 0;
-        nj->status = 0;
+        nj->status = -1;
         nj->in_bg = 0;
         nj->next = head_job;
 
@@ -19,25 +20,28 @@ job * new_job (char * line) {
 }
 
 void log_job (pid_t pgid, job * j) {
-    int status;
+    int status, rc;
     j->cpgid = pgid;
 
     if (!send_to_bg ) {
         cgid = pgid;
-        waitpid (pgid, &status, WUNTRACED ); 
-        j->status = status;     
+        rc = waitpid (- j->cpgid, &status, WUNTRACED  | WCONTINUED ) ; 
+        if (rc > 0) 
+            j->status = status;     
         // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);
     }
-    else {
+    else 
         j->in_bg = 1;
-    }
+        rc = waitpid (- j->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG ); 
+        if (rc > 0) 
+            j->status = status;  
 }
 
 void job_notify () {                    // a.k.a. 'jobs'  
 
     job * j, * jprev, * jnext;
 
-    update_status ();                   // Update status info for jobs
+    update_status ();                   // update status info for jobs
 
     jprev = NULL;
     for (j = head_job; j; j = jnext) {
@@ -48,12 +52,12 @@ void job_notify () {                    // a.k.a. 'jobs'
             if (j->in_bg)  
                  print_job_info (j, "Done   ");
                  
-            /* -- can't find bug with marking jobs
+            /* -- think I found bug with marking jobs */
             if (jprev) 
                 jprev->next = jnext;
             else  
                 head_job = jnext;
-            free (j);*/
+            free (j);
         }
         else                                        
             jprev = j;
@@ -62,17 +66,30 @@ void job_notify () {                    // a.k.a. 'jobs'
 
 void update_status () {
 
-    int status;
+    int status = -1;
     job * j;
     for (j = head_job; j; j = j->next) {
-    
-        waitpid (j->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG); 
-        j->status = status;
         
-        //if ( WIFSTOPPED (status) && !WIFCONTINUED (status) ) j->paused = 1;
-        if ( WIFEXITED (status) || WIFSIGNALED (status) ) 
-            if(!j->paused) j->done = 1;
-        // /*DEBUG*/ printf("-update: status %d of %d\n", status, j->cpgid);
+        int rc = waitpid ( j->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG );
+        
+        // /*DEBUG*/ //usr/include/x86_64-linux-gnu/bits/waitflags.h 
+        // /*DEBUG*/ //usr/include/x86_64-linux-gnu/sys/wait.h
+        // /*DEBUG*/ int  t=0, c=0, e=0, s=0;
+        // /*DEBUG*/ if (WIFSTOPPED (status))   t = 1;
+        // /*DEBUG*/ if (WIFCONTINUED (status)) c = 1;
+        // /*DEBUG*/ if (WIFEXITED (status))    e = 1;
+        // /*DEBUG*/ if (WIFSIGNALED (status))  s = 1;
+        // /*DEBUG*/ fprintf (stdout, "%d\tUPDATE raw_status %d of %d\t[%d,%d,%d,%d]\n", 
+        // /*DEBUG*/                   rc, status, j->cpgid, t, c, e, s );
+        
+        if (rc > 0) {
+            j->status = status;
+            if ( WIFCONTINUED (status) ) j->paused = 0; 
+            else if ( WIFEXITED (status) || WIFSIGNALED (status) ) 
+                if(!j->paused) j->done = 1;
+        }
+        else if (rc < 0 ) // most likely dead
+            j->done = 1;
     }
 }
 
@@ -82,7 +99,7 @@ void job_list() {
 
     for (j = head_job; j; j = j->next) {
         if (j->in_bg) 
-            print_job_info(j, get_status_str(j));
+            print_job_info (j, get_status_str(j));
     }
 }
 
@@ -90,14 +107,17 @@ void job_list_all() {
     job * j;
     fprintf(stdout, "DEBUG\n");
     for (j = head_job; j; j = j->next) {
-        print_job_info(j, get_status_str(j));
+        fprintf ( stdout, "%d\t", j->status);
+        print_job_info (j, get_status_str(j));
     }
 }
 
 char * get_status_str (job * j) {
 
-    if (WIFSTOPPED (j->status)) return "Stopped";
-    return "Running";
+    if (j->paused) return "Stopped";
+    if (!j->paused && !j->done) return "Running";
+    if (j->done) return  "Done    ";
+    return ("LostWTF");
 }
 
 
@@ -132,7 +152,7 @@ job * find_job (pid_t pgid) {   // find active job using pgid.
   return NULL;
 }
 
-job * find_fg_job () {  // find newest job->paused/in_bg
+job * find_fg_job () {          // find newest job->paused/in_bg
 
     job * j;
     for (j = head_job; j; j = j->next)
@@ -141,7 +161,7 @@ job * find_fg_job () {  // find newest job->paused/in_bg
     return NULL;
 }
 
-job * find_bg_job () {  // find newest job->paused
+job * find_bg_job () {          // find newest job->paused
 
     job * j;
     for (j = head_job; j; j = j->next)
