@@ -60,7 +60,7 @@ void job_notify () {                    // a.k.a. 'jobs'
             free (j);
         }
         if (j->paused)
-            print_job_info (j, "Stopped);
+            print_job_info (j, "Stopped");
              
         jprev = j;
     }
