@@ -24,6 +24,7 @@ typedef struct job {
   int done;             // 1 if process terminated
   int paused;           // 1 if process stopped
   int status;           // last reported status value
+  int notify;           // 1 if status change
   int in_bg;
 } job ;
 
