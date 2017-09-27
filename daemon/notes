@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# http://shahmirj.com/blog/beginners-guide-to-creating-a-daemon-in-linux
+* umask  - specifies processes permissions
+* setsid - Set Session Id
+ 
+# https://codereview.stackexchange.com/questions/143286/multithreaded-client-server-communication
+* new_sock = malloc(sizeof *new_sock);
+* Should not assume null termination - se read_size to terminate the string yourself (and make your buffer bigger by one character)
+* Handle SIGPIPE.
+* Write is not guaranteed to send a complete message; need to wrap it into a loop
+
+# http://www.thegeekstuff.com/2012/02/c-daemon-process/
+'Daemon Process Design'
+* Create normal process (Parent process)
+* Create child process from above
+* Terminate parent process : child process  becomes orphan and is taken over by init process
+* Call setsid() function to run the process in new session / group : becomes a daemon 
+* Change daemon process WD to root and close stdin, stdout and stderr fds
+
+# http://www.linuxhowtos.org/C_C++/socket.htm
+' establishing a socket on client side'
+* Create socket() system call
+* Connect socket to address of server using connect() system call
+* Send/receive data. Simplest is to use the read() and write() system calls.
+
+'establishing a socket on server side'
+* Create socket() system call
+* Bind socket to address using bind() system call (netinet: port number on host machine)
+* Listen for connections with listen() system call
+* Accept a connection with accept() system call; typically blocks until a client connects with server.
+* Send / receive data.
+
+# https://stackoverflow.com/questions/42643276/how-to-connect-multiple-clients-to-a-single-server-in-c-on-windows-visual-st
+> If a connection comes in, 'accept' will give you a new socket object. 
+> You still have the original listening socket, which waits for new connections, 
+  but you also have a second socket now with an already established connection to a client.
+> 'split the work:' Have one go back to calling listen on  original socket and await new connections + 
+  other grabs new socket and performs necessary I/O to interact with client
+  
+! its not good idea to access a file descriptor in two threads simultaneously
+! have provision to exit infinite while loop on error conditions. Check 'errno' and act upon it accordingly.
+! if 'recv' returned zero, other end closed the connection; close socket and exit loop
+! 'send' will then fail with "Broken Pipe" error. Quit loop and 'join'
