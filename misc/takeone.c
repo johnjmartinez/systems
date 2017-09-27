@@ -9,25 +9,17 @@
  *  Original source file available on http://mij.oltrelinux.com/devel/unixprg/
  *
  */
-#include <fcntl.h>           /* For O_* constants */
-#include <sys/stat.h>        /* For mode constants */
-#include <stdio.h>
-/* mq_* functions */
-#include <mqueue.h>
-/* exit() */
-#include <stdlib.h>
-/* getopt() */
-#include <unistd.h>
-/* ctime() and time() */
-#include <time.h>
-/* strlen() */
+#include <fcntl.h>      /* For O_* constants */
+#include <sys/stat.h>   /* For mode constants */
+#include <stdio.h>      /* mq_* functions */
+#include <mqueue.h>     /* exit() */
+#include <stdlib.h>     /* getopt() */
+#include <unistd.h>     /* ctime() and time() */
+#include <time.h>       /* strlen() */
 #include <string.h>
 
-
-/* name of the POSIX object referencing the queue */
-#define MSGQOBJ_NAME    "/myqueue123"
-/* max length of a message (just for this process) */
-#define MAX_MSG_LEN     10000
+#define MSGQOBJ_NAME    "/myqueue123"   /* name of the POSIX object referencing the queue */
+#define MAX_MSG_LEN     10000           /* max length of a message (just for this process) */
 
 
 int main(int argc, char *argv[]) {
@@ -36,7 +28,6 @@ int main(int argc, char *argv[]) {
     int msgsz;
     unsigned int sender;
     struct mq_attr msgq_attr;
-    
     
     /* opening the queue        --  mq_open() */
     msgq_id = mq_open(MSGQOBJ_NAME, O_RDWR);
@@ -59,7 +50,6 @@ int main(int argc, char *argv[]) {
     
     /* closing the queue    --  mq_close() */
     mq_close(msgq_id);
-    
     
     return 0;
 }
