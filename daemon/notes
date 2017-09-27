@@ -1,22 +1,42 @@
 #!/bin/bash
 
-# http://shahmirj.com/blog/beginners-guide-to-creating-a-daemon-in-linux
-* umask  - specifies processes permissions
-* setsid - Set Session Id
+%% YASHD %%
+ - Each client is accepted and served in a thread 
+   (code inside thread function will be mostly derived from proj1)
+ - use 'reusePort()' to bind to same port each time daemon runs (../misc/TCPServer-ex2.c)
  
-# https://codereview.stackexchange.com/questions/143286/multithreaded-client-server-communication
-* new_sock = malloc(sizeof *new_sock);
-* Should not assume null termination - se read_size to terminate the string yourself (and make your buffer bigger by one character)
-* Handle SIGPIPE.
-* Write is not guaranteed to send a complete message; need to wrap it into a loop
-
+    void reusePort(int s) {
+        int one=1;
+        if ( setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(one)) == -1 ) {
+	        printf("error in setsockopt,SO_REUSEPORT \n");
+	        exit(-1);
+	    }
+    }    
+   
+ - commands are executed using fork-exec mechanism (implies MUTEX)
+ - client run : yash <SERVER_IP_ADDR> (port is implicit = 3826)
+ - client end : ctrl+d (EOF) or 'quit'
+ - client --- signal handling 
+              ctrl+c will send "CTL c\n" (stop cmd on server)
+              ctrl+x will send "CTL z\n" (suspend cmd on server)
+ - PROTOCOL
+   "CMD <cmd_string>\n" - client
+   "CTL <[c|z|d]>\n"    - client
+   plain ASCII          - server
+   "\n#" prompt (end of receive) - server message delimeter)
+   
+ - LOGGING 
+   threads must perform syslog-like formattedlogging in file /tmp/yashd.log 
+   "<date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>\n"
+   Sep 18 10:02:55 yashd[127.0.0.1:7815]: echo $PATH
+ 
 # http://www.thegeekstuff.com/2012/02/c-daemon-process/
 'Daemon Process Design'
-* Create normal process (Parent process)
-* Create child process from above
-* Terminate parent process : child process  becomes orphan and is taken over by init process
-* Call setsid() function to run the process in new session / group : becomes a daemon 
-* Change daemon process WD to root and close stdin, stdout and stderr fds
++ Create normal process (Parent process)
++ Create child process from above
++ Terminate parent process : child process  becomes orphan and is taken over by init process
++ Call setsid() function to run the process in new session / group : becomes a daemon 
++ Change daemon process WD to root(?) and close stdin, stdout and stderr fds
 
 # http://www.linuxhowtos.org/C_C++/socket.htm
 ' establishing a socket on client side'
@@ -37,7 +57,14 @@
   but you also have a second socket now with an already established connection to a client.
 > 'split the work:' Have one go back to calling listen on  original socket and await new connections + 
   other grabs new socket and performs necessary I/O to interact with client
-  
+
+# TIPS
+! umask  - specifies processes permissions
+! setsid - Set Session Id
+! new_sock = malloc(sizeof *new_sock);
+! Should not assume null termination - se read_size to terminate the string yourself (and make your buffer bigger by one character)
+! Handle SIGPIPE.
+! Write is not guaranteed to send a complete message; need to wrap it into a loop  
 ! its not good idea to access a file descriptor in two threads simultaneously
 ! have provision to exit infinite while loop on error conditions. Check 'errno' and act upon it accordingly.
 ! if 'recv' returned zero, other end closed the connection; close socket and exit loop
