@@ -27,32 +27,29 @@ void *thr_func(void *arg) {
   printf("hello from thr_func, thread id: %d\n", data->tid);
   for (i = 0; i < 1e7; i++){
        // uncomment lock/unlock to see race condition
-       pthread_mutex_lock(&lock); // wrap CS in lock ...
-         count++; // Critical section involving read-modify-write to the shared variable
-       pthread_mutex_unlock(&lock); // ... unlock
+    pthread_mutex_lock(&lock);      // wrap CS in lock ...
+    count++;                        // Critical section - read-modify-write to shared variable
+    pthread_mutex_unlock(&lock);    // ... unlock
   }
   data->stuff = i;
   pthread_exit(NULL);
-  // No return
 }
 
  
 int main(int argc, char **argv) {
   pthread_t thr[NUM_THREADS];
   int i, rc;
-  /* create a thread_data_t argument array */
-  thread_data_t thr_data[NUM_THREADS];
+  thread_data_t thr_data[NUM_THREADS];  /* create a thread_data_t argument array */
  
-  /* create threads */
-  for (i = 0; i < NUM_THREADS; ++i) {
+  for (i = 0; i < NUM_THREADS; ++i) {   /* create threads */
     thr_data[i].tid = i;
     if ((rc = pthread_create(&thr[i], NULL, thr_func, &thr_data[i]))) {
       fprintf(stderr, "error: pthread_create, rc: %d\n", rc);
       return EXIT_FAILURE;
     }
   }
-  /* block until all threads complete */
-  for (i = 0; i < NUM_THREADS; ++i) {
+  
+  for (i = 0; i < NUM_THREADS; ++i) {   /* block until all threads complete */
     pthread_join(thr[i], NULL);
     printf("Thread %d stuff = %d\n", thr_data[i].tid,thr_data[i].stuff);
   }
