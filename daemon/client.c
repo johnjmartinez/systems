@@ -14,16 +14,16 @@ CLIENT = yash <SERVER_IP_ADDR> (port is implicit = 3826)
 
 static void catch_C(int signo) { // ctrl+c
 
-    // TODO -- send CTL c \n to server
+    // XXX -- send CTL c \n to server
+    send_cmd("CTL c \n");
     fflush(stdout);
-    fprintf(stdout, "\n");
 }
 
 static void catch_Z(int signo) { // ctrl+z
 
-    // TODO -- send CTL z \n to server
+    // XXX -- send CTL z \n to server
+    send_cmd("CTL z \n");
     fflush(stdout);
-    fprintf(stdout, "\n");
 }
 
 int main(int argc, char* argv[]) {
