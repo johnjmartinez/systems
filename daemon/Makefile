@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-c -Wall -g -std=gnu99
-LDFLAGS=
+LDFLAGS=-lpthread
 EXECUTABLE=yashd
 SOURCES=looper.c parser.c tokenizer.c executor.c jobatron.c
 OBJECTS=$(SOURCES:.c=.o)
