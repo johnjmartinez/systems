@@ -1,5 +1,5 @@
 /*
-SYNOPSIS: TCPCleint1 <hostid> <portnumber> 
+SYNOPSIS: TCPClient1 <hostid> <portnumber> 
 DESCRIPTION: program creates stream socket in inet domain, Connect to TCPServer1, Get messages typed
     by user and  Send them to TCPServer1 running on hostid. Then it waits for reply from TCPServer1
     and show it back to user, with message indicating if there is an error during round trip. 
@@ -101,13 +101,13 @@ int main(int argc, char **argv ) {
     
     /* get data from USER, send it SERVER, receive it from SERVER, display it back to USER  */
     for(;;) {   // PERFORMED BY PARENT
-	    cleanup(rbuf);
-	    if( (rc=recv(sd, rbuf, sizeof(buf), 0)) < 0){
+        cleanup(rbuf);
+        if( (rc=recv(sd, rbuf, sizeof(buf), 0)) < 0){
 	        perror("receiving stream message");
 	        exit(-1);
 	    }
         
-	    if (rc > 0) {
+        if (rc > 0) {
 	        rbuf[rc]='\0';
 	        printf("Received: %s\n", rbuf);
 	    }

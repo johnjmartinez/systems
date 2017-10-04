@@ -1,10 +1,10 @@
 /**
- * @file TCPClient-ex1.c
- * @brief Ccreates tcp socket in inet domain, connects to TCPServer-ex1.c running at <hostname> 
- *         and waiting at <port>, sends message "HI" and exits
- * Run as:
- *    TCPClient-ex1 <hostname> <port>
- */
+ @brief Creates tcp socket in inet domain, connects to TCPServer-ex1.c running at <hostname> and 
+    waiting at <port>, sends message "HI" and exits
+ Run as:
+    TCPClient-ex1 <hostname> <port>
+*/
+
 #include <stdio.h>      /* socket(), bind(), recv, send */
 #include <sys/types.h>
 #include <sys/socket.h> /* sockaddr_in */
@@ -22,7 +22,7 @@ int main(int argc, char **argv ) {
     
     sd = socket (AF_INET, SOCK_STREAM, 0);
     hp = gethostbyname(argv[1]);
-    server.sin_port = htons(atoi(argv[2]));
+    server.sin_port = htons ( atoi(argv[2]) );
     server.sin_family = AF_INET;
     
     bcopy ( hp->h_addr, &(server.sin_addr.s_addr), hp->h_length );
