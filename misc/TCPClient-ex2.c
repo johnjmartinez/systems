@@ -105,17 +105,17 @@ int main(int argc, char **argv ) {
         if( (rc=recv(sd, rbuf, sizeof(buf), 0)) < 0){
 	        perror("receiving stream message");
 	        exit(-1);
-	    }
+        }
         
         if (rc > 0) {
 	        rbuf[rc]='\0';
 	        printf("Received: %s\n", rbuf);
-	    }
+        }
         else {
 	        printf("Disconnected..\n");
 	        close (sd);
 	        exit(0);
-	    }
+        }
     }
 }
 
@@ -127,13 +127,13 @@ void cleanup(char *buf) {
 
 void GetUserInput() { // PERFORMED BY CHILD
     for(;;) {
-	    printf("\nType anything followed by RETURN, or type CTRL-D to exit\n");
-	    cleanup(buf);
-	    rc=read(0,buf, sizeof(buf));
-	    if (rc == 0) 
+        printf("\nType anything followed by RETURN, or type CTRL-D to exit\n");
+        cleanup(buf);
+        rc=read(0,buf, sizeof(buf));
+        if (rc == 0) 
             break;
-	    if (send(sd, buf, rc, 0) <0 )
-	        perror("sending stream message");
+        if (send(sd, buf, rc, 0) <0 )
+            perror("sending stream message");
     }
     printf ("EOF... exit\n");
     close(sd);
