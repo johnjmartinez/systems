@@ -1,7 +1,6 @@
 #include "../shell/yash.h"
 
-/* This example shows a "signal action function"
-   Send the child various signals and observe operation. */
+/* This example shows a "signal action function" Send the child various signals and observe operation. */
    
 void ChildHandler (int sig, siginfo_t *sip, void *notused) {
     int status;

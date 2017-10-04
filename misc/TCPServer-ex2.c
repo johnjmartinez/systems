@@ -1,12 +1,9 @@
 /*
-NAME:        TCPServer 
-SYNOPSIS:    TCPServer [port]
+ SYNOPSIS: TCPServer [port]
 
-DESCRIPTION:  The program creates a TCP socket in the inet 
-              listen for connections from TCPClients, 
-              accept clients into private sockets, and 
-              fork an echo process to ``serve'' the client.
-              If [port] is not specified, the program uses any available port.
+ DESCRIPTION: program creates TCP socket in inet, listens for connections from TCPClients, accept clients
+    into private sockets, and  fork an echo process to 'serve' client. If [port] is not specified, 
+    program uses any available port.
 */
 #include <stdio.h>      /* socket(), bind(), recv, send */
 #include <sys/types.h>
@@ -24,19 +21,22 @@ void EchoServe(int psd, struct sockaddr_in from);
 
 
 int main(int argc, char **argv ) {
-    int   sd, psd;
-    struct   sockaddr_in server;
-    struct  hostent *hp, *gethostbyname();
-    struct  servent *sp;
-    struct sockaddr_in from;
+    
+    char ThisHost[80];
+    
+    int childpid;
     int fromlen;
     int length;
-    char ThisHost[80];
     int pn;
-    int childpid;
+    int sd, psd;
     
-    sp = getservbyname("echo", "tcp");              /* get  TCPServer1 Host info, NAME & INET ADDRESS */
-    gethostname(ThisHost, MAXHOSTNAME);             /* OR   strcpy(ThisHost,"localhost"); */
+    struct hostent *hp, *gethostbyname();
+    struct servent *sp;
+    struct sockaddr_in from;
+    struct sockaddr_in server;
+    
+    sp = getservbyname("echo", "tcp");              /* get TCPServer1 Host info, NAME & INET ADDRESS */
+    gethostname(ThisHost, MAXHOSTNAME);             /* OR strcpy(ThisHost,"localhost"); */
     
     printf("----TCP/Server running at host NAME: %s\n", ThisHost);
     if  ( (hp = gethostbyname(ThisHost)) == NULL ) {
@@ -46,10 +46,8 @@ int main(int argc, char **argv ) {
     bcopy ( hp->h_addr, &(server.sin_addr), hp->h_length);
     printf("    (TCP/Server INET ADDRESS is: %s )\n", inet_ntoa(server.sin_addr));
 
-    
-    
-    /** Construct name of socket */
-    server.sin_family = AF_INET;                    /* OR   server.sin_family = hp->h_addrtype; */
+    /* Construct name of socket */
+    server.sin_family = AF_INET;                    /* OR server.sin_family = hp->h_addrtype; */
     
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     if (argc == 1)
@@ -57,17 +55,17 @@ int main(int argc, char **argv ) {
     else  {
         pn = htons(atoi(argv[1])); 
         server.sin_port =  pn;
-    }                                               /*OR    server.sin_port = sp->s_port; */
+    }                                               /* OR server.sin_port = sp->s_port; */
     
-    /** Create socket on which to send  and receive */
-    sd = socket (AF_INET,SOCK_STREAM,IPPROTO_TCP);  /* OR   sd = socket (hp->h_addrtype,SOCK_STREAM,0); */
+    /* Create socket on which to send  and receive */
+    sd = socket (AF_INET,SOCK_STREAM,IPPROTO_TCP);  /* OR sd = socket (hp->h_addrtype,SOCK_STREAM,0); */
     if (sd<0) {
 	    perror("opening stream socket");
 	    exit(-1);
     }
     
-    /** this allow the server to re-start quickly instead of fully wait
-	for TIME_WAIT which can be as large as 2 minutes */
+    /* allow server to re-start quickly instead of fully wait for TIME_WAIT which can be as large as
+       2 minutes */
     reusePort(sd);
     if ( bind( sd, (struct sockaddr *) &server, sizeof(server) ) < 0 ) {
 	    close(sd);
@@ -75,7 +73,7 @@ int main(int argc, char **argv ) {
 	    exit(-1);
     }
     
-    /** get port information and  prints it out */
+    /* get port information and  prints it out */
     length = sizeof(server);
     if ( getsockname (sd, (struct sockaddr *)&server,&length) ) {
 	    perror("getting socket name");
@@ -83,11 +81,11 @@ int main(int argc, char **argv ) {
     }
     printf("Server Port is: %d\n", ntohs(server.sin_port));
     
-    /** accept TCP connections from clients and fork a process to serve each */
-    listen(sd,4);
+    /* accept TCP connections from clients and fork process to serve each */
+    listen (sd, 4);
     fromlen = sizeof(from);
     for(;;){
-	    psd  = accept(sd, (struct sockaddr *)&from, &fromlen);
+	    psd  = accept (sd, (struct sockaddr *)&from, &fromlen);
 	    childpid = fork();
 	    if ( childpid == 0) {
 	        close (sd);
@@ -111,7 +109,7 @@ void EchoServe(int psd, struct sockaddr_in from) {
     else
 	    printf("(Name is : %s)\n", hp->h_name);
     
-    /**  get data from  clients and send it back */
+    /* get data from  clients and send it back */
     for(;;){
 	    printf("\n...server is waiting...\n");
 	    if( (rc=recv(psd, buf, sizeof(buf), 0)) < 0){

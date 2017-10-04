@@ -31,11 +31,12 @@ void log_job (pid_t pgid, job * j) {
             j->status = status;
         // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);
     }
-    else                                // background
+    else  {                              // background
         j->in_bg = 1;
         rc = waitpid (j->cpgid, &status, WUNTRACED |  WNOHANG );
         if (rc > 0)
             j->status = status;
+    }
 }
 
 void job_notify () {                    // recycle statuses before prompt

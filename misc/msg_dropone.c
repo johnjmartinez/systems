@@ -1,13 +1,12 @@
-/**
- * @file dropone.c
- * @brief Drops a message into a #defined queue, creating it if user
- *  requested. The message is associated a priority still user
- *  defined
- *  Created by Mij <mij@bitchx.it> on 07/08/05. 
- *  Original source file available on http://mij.oltrelinux.com/devel/unixprg/
- * Modified and annotated by Ramesh Yerraballi
- * Compile with -lrt to link the message queue library
- */
+/*
+ Drops a message into a #defined queue, creating it if user requested. 
+ The message is associated a priority still user defined
+ 
+ Created by Mij <mij@bitchx.it> on 07/08/05. 
+ Original source file available on http://mij.oltrelinux.com/devel/unixprg/
+
+ Compile with -lrt to link the message queue library
+*/
  
 #include <fcntl.h>      /* For O_* constants */
 #include <stdio.h>      /* mq_* functions */
@@ -53,15 +52,12 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     
-    /* opening the queue        --  mq_open() */
-    if (create_queue) {
+    if (create_queue) {         /* opening the queue */
         /* mq_open() for creating a new queue (using default attributes) */
         msgq_id = mq_open(MSGQOBJ_NAME, O_RDWR | O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, NULL);
     } 
-    else {
-        /* mq_open() for opening an existing queue */
-        msgq_id = mq_open(MSGQOBJ_NAME, O_RDWR);
-    }
+    else 
+        msgq_id = mq_open(MSGQOBJ_NAME, O_RDWR); /* mq_open() for opening an existing queue */
     
     if (msgq_id == (mqd_t)-1) {
         perror("In mq_open()");
@@ -72,11 +68,8 @@ int main(int argc, char *argv[]) {
     currtime = time(NULL);
     snprintf(msgcontent, MAX_MSG_LEN, "Hello from process %u (at %s).", my_pid, ctime(&currtime));
     
-    /* sending the message      --  mq_send() */
-    mq_send(msgq_id, msgcontent, strlen(msgcontent)+1, msgprio);
-    
-    /* closing the queue        -- mq_close() */
-    mq_close(msgq_id);
+    mq_send(msgq_id, msgcontent, strlen(msgcontent)+1, msgprio);    /* sending the message */
+    mq_close(msgq_id);                                              /* closing the queue  */
     
     return 0;
 }

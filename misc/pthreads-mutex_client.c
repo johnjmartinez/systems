@@ -1,12 +1,10 @@
 /* 
- *
  *  CMSC 23300 / 33300 - Networks and Distributed Systems
  *  
  *  A very simple socket client. Reads at most 100 bytes from a socket and quits.
- *  
  *  Written by: Borja Sotomayor
- *
  */
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,8 +15,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     /* A socket is just a file descriptor, i.e., an int */
     int clientSocket;
 
@@ -62,8 +59,7 @@ int main(int argc, char *argv[])
 
     /* Use getopt to fetch the host and port */
     while ((opt = getopt(argc, argv, "h:p:")) != -1)
-        switch (opt)
-        {
+        switch (opt) {
             case 'h':
                 host = strdup(optarg);
                 break;
@@ -74,8 +70,7 @@ int main(int argc, char *argv[])
                 printf("Unknown option\n"); exit(1);
         }
 
-    if(host == NULL || port == NULL)
-    {
+    if(host == NULL || port == NULL) {
         printf("USAGE: client -h HOST -p PORT\n");
         exit(1);
     }
@@ -96,15 +91,13 @@ int main(int argc, char *argv[])
     hints.ai_socktype = SOCK_STREAM;
 
     /* Call getaddrinfo with the host and port specified in the command line */
-    if (getaddrinfo(host, port, &hints, &res) != 0)
-    {
+    if (getaddrinfo(host, port, &hints, &res) != 0) {
         perror("getaddrinfo() failed");
         exit(-1);
     }
 
     /* Iterate through the list */
-    for(p = res;p != NULL; p = p->ai_next) 
-    {
+    for(p = res;p != NULL; p = p->ai_next) {
         /* The list could potentially include multiple entries (e.g., if a
            hostname resolves to multiple IP addresses). Here we just pick
            the first address we can connect to, although we could do
@@ -112,8 +105,7 @@ int main(int argc, char *argv[])
            addresses */
 
         /* Try to open a socket */
-        if ((clientSocket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) 
-        {
+        if ((clientSocket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
             perror("Could not open socket");
             continue;
         }
@@ -121,8 +113,7 @@ int main(int argc, char *argv[])
         /* Try to connect.
            Note: Like many other socket functions, this function expects a sockaddr and
                  its length, both of which are conveniently provided in addrinfo */
-        if (connect(clientSocket, p->ai_addr, p->ai_addrlen) == -1) 
-        {
+        if (connect(clientSocket, p->ai_addr, p->ai_addrlen) == -1) {
             close(clientSocket);
             perror("Could not connect to socket");
             continue;
@@ -137,29 +128,24 @@ int main(int argc, char *argv[])
 
     /* Read from the socket */
     nbytes = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-    if (nbytes == 0)
-    {
+    if (nbytes == 0) {
         perror("Server closed the connection");
         close(clientSocket);
         exit(-1);
     }
-    else if (nbytes == -1)
-    {
+    else if (nbytes == -1) {
         perror("Socket recv() failed");
         close(clientSocket);
         exit(-1);
     }
-    else
-    {
-        /* The message doesn't have a '\0' at the end. Add one so we
-           can print it */
+    else {
+        /* The message doesn't have a '\0' at the end. Add one so we can print it */
         buffer[nbytes] = '\0';
         printf("Received this message:\n<<%s>>\n", buffer);
     }
 
     /* Note: The above assumes that the message will arrive in a single packet, which
        may not always be the case. */
-
     close(clientSocket);
 
     return 0;

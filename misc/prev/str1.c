@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int main ()
-{
+int main () {
   char str[] ="This is a simple string";
   char * pch;
   pch = strstr (str,"simple");
