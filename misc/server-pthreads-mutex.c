@@ -1,14 +1,10 @@
 /* 
- *
  *  CMSC 23300 / 33300 - Networks and Distributed Systems
  *  
- *  A simple multi-threaded server that requires
- *  a mutex lock to avoid a race condition.
+ *  A simple multi-threaded server that requires a mutex lock to avoid a race condition.
  *
  *  To actually use the lock, you must compile with -DMUTEX
- *  
  *  Written by: Borja Sotomayor
- *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,30 +25,26 @@ const char *port = "23300";
 int numConnections = 0;
 
 /* Added: A lock to access numConnections.
-   Note that this file needs to be compiled
-   with -DMUTEX for the lock to actually be used */
+   Note that this file needs to be compiled with -DMUTEX for the lock to actually be used */
 #ifdef MUTEX
 pthread_mutex_t lock;
 #endif
 
 
-struct workerArgs
-{
+struct workerArgs {
     int socket;
 };
 
 void *accept_clients(void *args);
 void *service_single_client(void *args);
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     pthread_t server_thread;
 
     sigset_t new;
     sigemptyset (&new);
     sigaddset(&new, SIGPIPE);
-    if (pthread_sigmask(SIG_BLOCK, &new, NULL) != 0) 
-    {
+    if (pthread_sigmask(SIG_BLOCK, &new, NULL) != 0) {
         perror("Unable to mask SIGPIPE");
         exit(-1);
     }
@@ -62,8 +54,7 @@ int main(int argc, char *argv[])
     pthread_mutex_init(&lock, NULL);
     #endif
 
-    if (pthread_create(&server_thread, NULL, accept_clients, NULL) < 0)
-    {
+    if (pthread_create(&server_thread, NULL, accept_clients, NULL) < 0) {
         perror("Could not create server thread");
         exit(-1);
     }
@@ -78,8 +69,7 @@ int main(int argc, char *argv[])
     pthread_exit(NULL);
 }
 
-void *accept_clients(void *args)
-{
+void *accept_clients(void *args) {
     int serverSocket;
     int clientSocket;
     pthread_t worker_thread;
@@ -94,36 +84,30 @@ void *accept_clients(void *args)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if (getaddrinfo(NULL, port, &hints, &res) != 0)
-    {
+    if (getaddrinfo(NULL, port, &hints, &res) != 0) {
         perror("getaddrinfo() failed");
         pthread_exit(NULL);
     }
 
-    for(p = res;p != NULL; p = p->ai_next) 
-    {
-        if ((serverSocket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) 
-        {
+    for(p = res;p != NULL; p = p->ai_next) {
+        if ((serverSocket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
             perror("Could not open socket");
             continue;
         }
 
-        if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
-        {
+        if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
             perror("Socket setsockopt() failed");
             close(serverSocket);
             continue;
         }
 
-        if (bind(serverSocket, p->ai_addr, p->ai_addrlen) == -1)
-        {
+        if (bind(serverSocket, p->ai_addr, p->ai_addrlen) == -1) {
             perror("Socket bind() failed");
             close(serverSocket);
             continue;
         }
 
-        if (listen(serverSocket, 5) == -1)
-        {
+        if (listen(serverSocket, 5) == -1) {
             perror("Socket listen() failed");
             close(serverSocket);
             continue;
@@ -134,17 +118,14 @@ void *accept_clients(void *args)
     
     freeaddrinfo(res);
 
-    if (p == NULL)
-    {
+    if (p == NULL) {
         fprintf(stderr, "Could not find a socket to bind to.\n");
         pthread_exit(NULL);
     }
 
-    while (1)
-    {
+    while (1) {
         clientAddr = malloc(sinSize);
-        if ((clientSocket = accept(serverSocket, (struct sockaddr *) clientAddr, &sinSize)) == -1) 
-        {
+        if ((clientSocket = accept(serverSocket, (struct sockaddr *) clientAddr, &sinSize)) == -1) {
             free(clientAddr);
             perror("Could not accept() connection");
             continue;
@@ -153,8 +134,7 @@ void *accept_clients(void *args)
         wa = malloc(sizeof(struct workerArgs));
         wa->socket = clientSocket;
 
-        if (pthread_create(&worker_thread, NULL, service_single_client, wa) != 0) 
-        {
+        if (pthread_create(&worker_thread, NULL, service_single_client, wa) != 0) {
             perror("Could not create a worker thread");
             free(clientAddr);
             free(wa);
@@ -182,10 +162,8 @@ void *service_single_client(void *args) {
     pthread_mutex_lock (&lock);
     #endif
 
-    /* The following two loops will result in numConnections
-       being ultimately incremented by just one, but we do
-       this with these loops to increase the chances of a
-       race condition happening */
+    /* The following two loops will result in numConnections being ultimately incremented by just one,
+       but we do this with these loops to increase the chances of a race condition happening */
     for(i=0; i< NLOOPS; i++)
         numConnections++;
     for(i=0; i< NLOOPS-1; i++)
@@ -197,13 +175,11 @@ void *service_single_client(void *args) {
     pthread_mutex_unlock (&lock);
     #endif
 
-    while(1)
-    {
+    while(1) {
         nbytes = recv(socket, buffer, sizeof(buffer), 0);
         if (nbytes == 0)
             break;
-        else if (nbytes == -1)
-        {
+        else if (nbytes == -1) {
             perror("Socket recv() failed");
             close(socket);
             pthread_exit(NULL);

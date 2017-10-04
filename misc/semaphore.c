@@ -1,26 +1,20 @@
 /*
  *  semaphore.c
  *  
- *
  *  Created by Mij <mij@bitchx.it> on 12/03/05.
  *  Original source file available at http://mij.oltrelinux.com/devel/unixprg/
- *
  */
 
-
 #define _POSIX_SOURCE
+
 #include <stdio.h>
-/* sleep() */
-#include <errno.h>
+#include <errno.h>      /* sleep() */
 #include <unistd.h>
-/* abort() and random stuff */
-#include <stdlib.h>
-/* time() */
-#include <time.h>
+#include <stdlib.h>     /* abort() and random stuff */
+#include <time.h>       /* time() */
 #include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
-
 
 /* this skips program termination when receiving signals */
 void signal_handler(int type);
@@ -38,15 +32,11 @@ void *thread_a(void *);
  */
 void *thread_b(void *);
 
+sem_t mysem; /* the semaphore */
 
-/* the semaphore */
-sem_t mysem;
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     pthread_t mytr_a, mytr_b;
     int ret;
-    
     
     srand(time(NULL));
     signal(SIGHUP, signal_handler);
@@ -90,16 +80,12 @@ int main(int argc, char *argv[])
         perror("Error in pthread_join");
         abort();
     }
-
     return 0;
 }
 
-
-void *thread_a(void *x)
-{
+void *thread_a(void *x) {
     unsigned int i, num;
     int ret;
-    
     
     printf(" -- thread A -- starting\n");
     num = ((unsigned int)rand() % 40);
@@ -119,7 +105,8 @@ void *thread_a(void *x)
                 if (errno != EINVAL) {
                     perror(" -- thread A -- Error in sem_wait. terminating -> ");
                     pthread_exit(NULL);
-                } else {
+                }
+	            else{
                     /* sem_wait() has been interrupted by a signal: looping again */
                     printf(" -- thread A -- sem_wait interrupted. Trying again for the lock...\n");
                 }
@@ -140,16 +127,12 @@ void *thread_a(void *x)
     }
     
     printf(" -- thread A -- closing up\n");
-
     pthread_exit(NULL);
 }
 
-
-void *thread_b(void *x)
-{
+void *thread_b(void *x) {
     unsigned int i, num;
     int ret;
-    
     
     printf(" -- thread B -- starting\n");
     num = ((unsigned int)rand() % 100);
@@ -170,12 +153,11 @@ void *thread_b(void *x)
             }
             
             printf(" -- thread B -- cannot enter critical section: semaphore locked\n");
-        } else {
+        }
+        else{
             /* CRITICAL SECTION */
             printf(" -- thread B -- enter critical section\n");
-
             sleep(rand() % 10);
-            
             /* done, now unlocking the semaphore */
             printf(" -- thread B -- leaving critical section\n");
             sem_post(&mysem);
@@ -183,14 +165,11 @@ void *thread_b(void *x)
     }
     
     printf(" -- thread B -- closing up\n");
-    
-    /* joining main() */
-    pthread_exit(NULL);
+    pthread_exit(NULL); /* joining main() */
 }
 
 
-void signal_handler(int type)
-{
+void signal_handler(int type) {
     /* do nothing */
     printf("process got signal %d\n", type);
     return;

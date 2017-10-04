@@ -1,12 +1,9 @@
 /*
-NAME:        TCPServer 
 SYNOPSIS:    TCPServer [port]
 
-DESCRIPTION:  The program creates a TCP socket in the inet 
-              listen for connections from TCPClients, 
-              accept clients into private sockets, and 
-              fork an echo process to ``serve'' the client.
-              If [port] is not specified, the program uses any available port.
+DESCRIPTION:  program creates TCP socket in inet, listens for connections from TCPClients, 
+              accept clients into private sockets, and  fork an echo process to 'serve' client.
+              If [port] is not specified, program uses any available port.
 */
 #include <stdio.h>      /* socket(), bind(), recv, send */
 #include <sys/types.h>
@@ -24,16 +21,19 @@ void EchoServe(int psd, struct sockaddr_in from);
 
 
 int main(int argc, char **argv ) {
-    int   sd, psd;
-    struct   sockaddr_in server;
-    struct  hostent *hp, *gethostbyname();
-    struct  servent *sp;
-    struct sockaddr_in from;
+    
+    char ThisHost[80];
+    
+    int childpid;
     int fromlen;
     int length;
-    char ThisHost[80];
     int pn;
-    int childpid;
+    int sd, psd;
+    
+    struct hostent *hp, *gethostbyname();
+    struct servent *sp;
+    struct sockaddr_in from;
+    struct sockaddr_in server;
     
     sp = getservbyname("echo", "tcp");              /* get  TCPServer1 Host info, NAME & INET ADDRESS */
     gethostname(ThisHost, MAXHOSTNAME);             /* OR   strcpy(ThisHost,"localhost"); */
@@ -66,7 +66,7 @@ int main(int argc, char **argv ) {
 	    exit(-1);
     }
     
-    /** this allow the server to re-start quickly instead of fully wait
+    /** allow server to re-start quickly instead of fully wait
 	for TIME_WAIT which can be as large as 2 minutes */
     reusePort(sd);
     if ( bind( sd, (struct sockaddr *) &server, sizeof(server) ) < 0 ) {
@@ -83,7 +83,7 @@ int main(int argc, char **argv ) {
     }
     printf("Server Port is: %d\n", ntohs(server.sin_port));
     
-    /** accept TCP connections from clients and fork a process to serve each */
+    /** accept TCP connections from clients and fork process to serve each */
     listen(sd,4);
     fromlen = sizeof(from);
     for(;;){

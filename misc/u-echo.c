@@ -1,16 +1,9 @@
-/**
- * @file u-echo.c
- * @brief u-echo.c - Communicate with the u-echod server
- *       through a Unix socket associated with a file pathname 
- *      [passed either as argv[1] or by default /tmp/u-echod]
- *      In a loop the user is prompted to enter a line of text
- *      and this data is sent to the server; the reply (echo) is printed
- *      out. The loop terminates when we enter a null line.
- * This example is from Giorgio Ingargiola's Unix Programming Course
- * at Temple University 
- * (https://cis.temple.edu/~ingargio/cis307/readings/daemon.html)
- * I modified it a little bit and annotated it with explanations
- */
+/* CLIENT
+ @brief u-echo.c - Communicate with u-echod server through Unix socket associated with file pathname 
+    [passed either as argv[1] or by default /tmp/u-echod] In loop user is prompted to enter line of text
+    and data is sent to server; reply (echo) is printed out. loop terminates when we enter null line.
+ (https://cis.temple.edu/~ingargio/cis307/readings/daemon.html)
+*/
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -27,10 +20,7 @@
 
 char u_echo_path[256] = "/tmp/u-echod"; /* default */
 
-
-int
-main(int argc, char **argv)
-{
+int main(int argc, char * argv[]) {
     int sockfd;
     struct sockaddr_un servaddr;
     
@@ -52,22 +42,22 @@ main(int argc, char **argv)
         int n;
         char c;
         
-        /* Read a line from user and write it to socket */
+        /* Read line from user and write it to socket */
         n = 0;
-        printf("Enter a line: ");
+        printf("Enter line: ");
         for (;;) {
             c = getchar();
             write(sockfd, &c, 1);
             if (c == '\n') break;
             n++;
         }
-        /* Read a line from the socket */
+        /* Read line from socket */
         for (;;) {
             read(sockfd, &c, 1);
             putchar(c);
             if (c == '\n') break;
         }
-        if (n == 0) break; /* The line entered by user was null */
+        if (n == 0) break; /* line entered by user was null */
     }
     
     exit(0);

@@ -6,8 +6,10 @@
 #include <sys/ioctl.h>
 #include <sys/termios.h>
 #include <string.h>
+
 /* NOTE: This example illustrates tcsetgrp() and setpgrp(), but doesn't
 function correctly because SIGTTIN and SIGTTOU aren't handled.*/
+
 int main() {
     //int status, 
     int cpid, ppid;

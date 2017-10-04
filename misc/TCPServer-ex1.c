@@ -1,10 +1,7 @@
-/**
- * @file TCPServer-ex1.c
- * @brief  Creates a tcp socket in the inet 
- *         domain, binds it to port given as argv[1], 
- *         listens and accepts a connection from 
- *         TCPClient-ex1, and receives any message
- *         arrived to the socket and prints it out
+/*
+ * @brief  Creates tcp socket in inet domain, binds it to port given as argv[1], 
+ *         listens and accepts connection from TCPClient-ex1, and receives any message
+ *         arrived to socket and prints it out
  * Run as:
  *    TCPServer-ex1 <hostname> <port>
  */
@@ -19,8 +16,7 @@
 #include <unistd.h> /* close() */
 #include <stdlib.h> /* exit() */
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
    int sd, psd;
    struct   sockaddr_in name;
    char   buf[1024];

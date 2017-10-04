@@ -1,13 +1,9 @@
 /*
-NAME:           TCPCleint1 
 SYNOPSIS:       TCPCleint1 <hostid> <portnumber> 
-DESCRIPTION:    The program creates a stream socket in the inet domain, 
-                Connect to TCPServer1, 
-                Get messages typed by a user and 
-                Send them to TCPServer1 running on hostid
-                Then it waits for a reply from  the TCPServer1
-                and show it back to the user, with a message
-                indicating if there is an error during the round trip. 
+DESCRIPTION:    program creates stream socket in inet domain, Connect to TCPServer1, 
+                Get messages typed by user and  Send them to TCPServer1 running on hostid
+                Then it waits for reply from TCPServer1 and show it back to user, with message
+                indicating if there is an error during round trip. 
 */
 #include <stdio.h>
 /* socket(), bind(), recv, send */
@@ -136,14 +132,12 @@ int main(int argc, char **argv ) {
   }
 }
 
-void cleanup(char *buf)
-{
+void cleanup(char *buf) {
     int i;
     for(i=0; i<BUFSIZE; i++) buf[i]='\0';
 }
 
-void GetUserInput()
-{
+void GetUserInput() {
     for(;;) {
 	printf("\nType anything followed by RETURN, or type CTRL-D to exit\n");
 	cleanup(buf);

@@ -1,8 +1,7 @@
 /**
  * @file TCPClient-ex1.c
- * @brief Ccreates a tcp socket in the inet 
- *         domain, connects to TCPServer-ex1.c running at <hostname> 
- *         and waiting at port ???, sends the message "HI" and exits
+ * @brief Ccreates tcp socket in inet domain, connects to TCPServer-ex1.c running at <hostname> 
+ *         and waiting at <port>, sends message "HI" and exits
  * Run as:
  *    TCPClient-ex1 <hostname> <port>
  */
