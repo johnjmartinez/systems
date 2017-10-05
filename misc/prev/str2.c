@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int main ()
-{
+int main () {
   char str[][5] = { "<" , ">" , "fg" };
   char * a = "kljnosdcoinonwdc > sdiubweibiuewrbvui";
   

@@ -1,8 +1,8 @@
-/* Example to demonstrate the working of pthreads:
-   a. Shows how to pass a structure to the thread as its input
+/* Example to demonstrate working of pthreads:
+   a. Shows how to pass structure to thread as its input
    b. Shows how to handle concurrent acccess to shared variables using pthrea locks
-   c. Shows how to pass information back to the caller without a return statement 
-      but by changing contents of the passed struct.
+   c. Shows how to pass information back to caller without return statement but by changing contents 
+      of passed struct.
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +39,7 @@ void *thr_func(void *arg) {
 int main(int argc, char **argv) {
   pthread_t thr[NUM_THREADS];
   int i, rc;
-  thread_data_t thr_data[NUM_THREADS];  /* create a thread_data_t argument array */
+  thread_data_t thr_data[NUM_THREADS];  /* create thread_data_t argument array */
  
   for (i = 0; i < NUM_THREADS; ++i) {   /* create threads */
     thr_data[i].tid = i;
