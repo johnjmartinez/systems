@@ -92,7 +92,7 @@ int main(int argc, char **argv ) {
 	        EchoServe(psd, from);
 	    }
 	    else {
-	        printf("My new child pid is %d\n", childpid);
+	        printf("new child pid is %d\n", childpid);
 	        close(psd);
 	    }
     }
@@ -138,7 +138,7 @@ void reusePort(int s){
     int one=1;
     
     if ( setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char *) &one,sizeof(one)) == -1 ){
-	    printf("error in setsockopt,SO_REUSEPORT \n");
+	    printf("error in setsockopt, SO_REUSEPORT \n");
 	    exit(-1);
 	}
 }      

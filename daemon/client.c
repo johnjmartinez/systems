@@ -1,5 +1,4 @@
 #include "client.h"
-
 /*
 CLIENT = yash <SERVER_IP_ADDR> (port is implicit = 3826)
     protocol:
@@ -34,13 +33,22 @@ int main(int argc, char* argv[]) {
     char * _tokens[LINE_MAX / 3];
     char * tmp;
 
-    int count;
+    int count, sckt;
     bool skip;
-
+    
+    struct sockaddr_in server;
+    struct hostent * host;
+    
     if (signal(SIGINT, catch_C) == SIG_ERR) printf("signal(SIGINT) error");
     if (signal(SIGTSTP, catch_Z) == SIG_ERR) printf("signal(SIGTSTP) error");
     
-    // TODO -- start connection to server
+    // XXX -- check if connection to server code ok
+    sckt = socket (AF_INET, SOCK_STREAM, 0);
+    host = gethostbyname(argv[1]);
+    server.sin_port = htons (PORT_NUM);
+    server.sin_family = AF_INET;
+    bcopy ( host->h_addr, &(server.sin_addr.s_addr), host->h_length );
+    connect ( sckt, (struct  sockaddr *) &server, sizeof(server) );
 
     while (1) {
 

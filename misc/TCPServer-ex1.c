@@ -2,7 +2,7 @@
  @brief Creates tcp socket in inet domain, binds it to port given as argv[1], listens and accepts 
     connection from TCPClient-ex1, and receives any message arrived to socket and prints it out
  Run as:
-    TCPServer-ex1 <hostname> <port>
+    TCPServer-ex1 <port>
 */
 #include <stdio.h>      /* socket(), bind(), recv, send */
 #include <sys/types.h>
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     sd = socket (AF_INET, SOCK_STREAM, 0);
 
     name.sin_family = AF_INET;
-    name.sin_addr.s_addr = htonl(INADDR_ANY);
+    name.sin_addr.s_addr = htonl(INADDR_ANY); // ??
     name.sin_port = htons(atoi(argv[1]));
 
     bind ( sd, (struct  sockaddr *) &name, sizeof(name) );
