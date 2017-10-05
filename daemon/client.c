@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
     while (1) {
 
         // TODO -- get command prompt from server
+        
         fflush(stdout);
         skip = false;
 
