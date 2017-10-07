@@ -2,11 +2,11 @@ CC=gcc
 CFLAGS=-c -Wall -g -std=gnu99
 LDFLAGS=-lpthread
 EXECUTABLE=yashd 
-SOURCES=daemon.c parser.c tokenizer.c executor.c jobatron.c
+SOURCES=daemon.c tokenizer.c executor.c jobatron.c
 OBJECTS=$(SOURCES:.c=.o)
 
-#all: $(SOURCES) $(EXECUTABLE) yash
-all : yash
+all: $(SOURCES) $(EXECUTABLE) yash
+#all : yash
 
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
@@ -15,7 +15,7 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $< -o $@
     
 yash: client.o
-	$(CC) -g -o yash client.c 
+	$(CC) -o yash client.o
         
 clean:
-	rm *.o yash
+	rm *.o yash yashd

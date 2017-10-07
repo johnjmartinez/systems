@@ -16,7 +16,6 @@
 #define O_FIN  O_RDONLY
 
 // SHELL GLOBALS
-
 typedef struct job {
   struct job * next;    // next proc in pipe
   char * line;          // line
@@ -35,13 +34,11 @@ int send_to_bg;         // in cmd line
 int fwd, bck;           // fwd = out = fd for >; bck = in = fd for <
 int pipfd[2];           // | in cmd line
 
-// looper.c
-void yash_init();
+// daemon.c
+void d_init();
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
-
-// parser.c
 bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);
 

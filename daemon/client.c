@@ -11,12 +11,10 @@
 */
 
 static void catch_C(int signo) { // ctrl+c
-    // XXX -- send CTL c \n to server
     send (sckt, "CTL c \n", 7, 0);
 }
 
 static void catch_Z(int signo) { // ctrl+z
-    // XXX -- send CTL z \n to server
     send (sckt, "CTL z \n", 7, 0);
 }
 
@@ -33,7 +31,6 @@ int main (int argc, char* argv[]) {
     struct sockaddr_in server;
     struct hostent * target;
        
-    // XXX -- check if connection to server code OK
     sckt = socket (AF_INET, SOCK_STREAM, 0);
     target = gethostbyname(argv[1]);
     server.sin_port = htons (PORT_NUM);
@@ -44,7 +41,8 @@ int main (int argc, char* argv[]) {
     while (1) {
 
         // TODO -- get command prompt from server
-        printf("# ");
+        // TODO -- Handle SIGPIPE from server going down?
+       printf("# ");
         fflush(stdout);
         skip = false;
 
@@ -70,7 +68,6 @@ int main (int argc, char* argv[]) {
             continue;
         }
 
-        // XXX -- send cmd to server
         send (sckt, line, strlen(line), 0 );
         free(tmp);
     }
@@ -97,7 +94,7 @@ bool tokenizer (char * line, char * _tokens[]) {
 
 int parser (char * _tokens[]) {
     
-    // XXX -- check first token is either CMD, CTL or quit
+    // ERROR CHECKING -- check first token is either CMD, CTL or quit
     if (strncmp(_tokens[0], "CMD", 3) == 0) {
         return 0;
     }

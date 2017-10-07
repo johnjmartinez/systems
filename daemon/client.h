@@ -1,6 +1,3 @@
-#ifndef CLIENT_H
-#define CLIENT_H
-
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -22,6 +19,3 @@ int sckt;
 
 bool tokenizer (char * line, char * _tokens[]);
 int parser (char * _tokens[]);
-
-#endif /* CLIENT_H */
-
