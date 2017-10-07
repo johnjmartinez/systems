@@ -6,13 +6,6 @@ struct sockaddr_in serv_addr, cli_addr;
 
 int main(int argc, char * argv[]) {
 
-    char line[LINE_MAX];
-    char * _tokens[LINE_MAX/3];
-    char * tmp;
-
-    int pipe_pos, fwd_pos, bck_pos, count;
-    bool skip;
-
     // TODO -- make process a daemon
     d_init(argv); // socket(), bind(), listen()
     // TODO -- set log output
@@ -87,7 +80,16 @@ void d_init (char * argv[]) {
     listen ( sockfd, 7 ); // MAX 7 connections in queue
 }
 
-void shell_iter () { // XXX -- THREAD JOB : not sure what should be mutex'd here 
+void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here 
+    
+    char line[LINE_MAX];
+    char * _tokens[LINE_MAX/3];
+    char * tmp;
+
+    int pipe_pos, fwd_pos, bck_pos, count;
+    bool skip;
+    
+    for(;;) {
     
         job_notify();
         fflush(stdout);
@@ -125,5 +127,5 @@ void shell_iter () { // XXX -- THREAD JOB : not sure what should be mutex'd here
 
         executor (_tokens, pipe_pos, fwd_pos, bck_pos, count, line);
         free (tmp);
-    
+    }
 }

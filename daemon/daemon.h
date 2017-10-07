@@ -21,12 +21,12 @@
 
 // DAEMON SERVER GLOBALS
 
-
+/* XXX -- IF I ADD IT HERE I GET MULTIPLE COMPILER ERRORS
 void error_and_exit(const char *msg) {
     perror(msg);
     exit(1);
 }
-
+*/
 
 // SHELL GLOBALS
 typedef struct job {
@@ -49,6 +49,7 @@ int pipfd[2];           // | in cmd line
 
 // daemon.c
 void d_init();
+void shell_job ();
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
