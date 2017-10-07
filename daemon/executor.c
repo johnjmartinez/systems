@@ -45,7 +45,7 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line )
          else job_list_all ();
     }    
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                 // CD -- chdir ()
-        if ( count==2 ) {                                       // TODO: update env $*WD
+        if ( count==2 ) {                                       // TODO -- update env $*WD
             if (chdir (cmds[1]) != 0)                          
                 perror ("yash");
         }

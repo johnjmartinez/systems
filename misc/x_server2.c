@@ -42,13 +42,14 @@ int main(int argc, char *argv[]) {
      clilen = sizeof(cli_addr);
      
      while (1) {
-         newsockfd = accept(sockfd, 
-               (struct sockaddr *) &cli_addr, &clilen);
+         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
          if (newsockfd < 0) 
              error("ERROR on accept");
+             
          pid = fork();
          if (pid < 0)
              error("ERROR on fork");
+             
          if (pid == 0)  {       // CHILD
              close(sockfd);
              do_stuff(newsockfd);
@@ -62,8 +63,8 @@ int main(int argc, char *argv[]) {
 }
 
 /*
- There is separate instance of function for each connection. It handles all communication once
- connnection has been established.
+ There is separate instance of function for each connection. It handles all communication
+ once connnection has been established.
 */
 void do_stuff (int sock) {
    int n;
