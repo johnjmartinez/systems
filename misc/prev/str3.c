@@ -10,7 +10,7 @@
 }
 
 #define LINE_MAX 200
-#define	DELIM " \t"
+#define	DELIM " \t\n\a\r"
 
 void get_tokens(char * tokens[], char * line) { 
     
@@ -40,12 +40,11 @@ int main(int argc, char *argv[]) {
                 while (getchar() != '\n');          // flush stdin for next call
             }
             else {
-                line[strlen(line)-1] = '\0';
                 get_tokens(_tokens, line);       
             }
         }
         
-        for( int i = 0; _tokens[i] != NULL; i++ )  printf ("%i %s\n", i, _tokens[i]);
+        for( int i = 0; _tokens[i] != NULL; i++ )  printf ("%i \'%s\'\n", i, _tokens[i]);
     }
 }
 
