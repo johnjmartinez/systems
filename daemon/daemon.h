@@ -19,16 +19,15 @@
 #define O_FOUT O_WRONLY|O_CREAT|O_TRUNC
 #define O_FIN  O_RDONLY
 
-// DAEMON SERVER GLOBALS
+#define LOG_FILE "/tmp/yashd.log"
 
-/* XXX -- IF I ADD IT HERE I GET MULTIPLE COMPILER ERRORS
-void error_and_exit(const char *msg) {
-    perror(msg);
-    exit(1);
-}
-*/
+// daemon.c
 
-// SHELL GLOBALS
+void d_init();          // daemon 
+void s_init();          // socket/connection init
+void shell_job ();
+void error_and_exit(const char *msg) ;
+
 typedef struct job {
   struct job * next;    // next proc in pipe
   char * line;          // line
@@ -46,10 +45,6 @@ pid_t yash_pgid, cgid;  // current group id in fg
 int send_to_bg;         // in cmd line
 int fwd, bck;           // fwd = out = fd for >; bck = in = fd for <
 int pipfd[2];           // | in cmd line
-
-// daemon.c
-void d_init();
-void shell_job ();
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
