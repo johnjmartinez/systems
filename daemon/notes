@@ -26,7 +26,7 @@
    "\n#" prompt (end of receive) - server message delimeter)
    
  - LOGGING 
-   threads must perform syslog-like formattedlogging in file /tmp/yashd.log 
+   threads must perform syslog-like formatted logging in file /tmp/yashd.log 
    "<date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>\n"
    Sep 18 10:02:55 yashd[127.0.0.1:7815]: echo $PATH
  

@@ -57,7 +57,7 @@ static void catch_Z(int signo) {   // ctrl+z
 void s_init (char * argv[]) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     
-    bzero((void *)&servaddr, sizeof(servaddr)); // init to zeroes
+    //bzero((void *)&servaddr, sizeof(servaddr)); // init to zeroes
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr =  htonl(INADDR_ANY);
     serv_addr.sin_port =  htons(atoi(argv[1]));
@@ -83,7 +83,7 @@ void d_init() {
 
     if ( (fd = open("/dev/null", O_RDWR)) < 0) 
         error_and_exit("ERROR: d_init - /dev/null open");
-    dup2(fd, STDIN_FILENO           // redirect STDIN to /dev/null
+    dup2(fd, STDIN_FILENO);         // redirect STDIN to /dev/null
     dup2(fd, STDOUT_FILENO);        // redirect STDOUT to /dev/null
     close (fd);
 
@@ -92,11 +92,13 @@ void d_init() {
     dup2(fd, STDERR_FILENO);        // redirect STDERR to log
     close (fd);
 
+    /*
     if ( signal(SIGCHLD, sig_chld) < 0 ) 
         error_and_exit("Signal SIGCHLD");
     if ( signal(SIGPIPE, sig_pipe) < 0 ) 
         error_and_exit("Signal SIGPIPE");
-
+     */
+    
     chdir("/tmp");    
     umask(0);                       // set umask 
     setsid();                       // becoming session leader 
