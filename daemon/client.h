@@ -1,6 +1,4 @@
-#ifndef CLIENT_H
-#define CLIENT_H
-
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,16 +8,14 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/socket.h> // sockaddr_in 
+#include <netdb.h>      // struct hostent
 
-#include <sys/socket.h> /* sockaddr_in */
+#define LINE_MAX 204    // CMD/CTL +\ + <cmd>
+#define	DELIM " \t\a\r" // took out \n so that client would recognize empty line as invalid
+#define PORT_NUM 34567
 
-#define LINE_MAX 200
-#define	DELIM " \t\n\a\r"
-#define PORT_NUM 3826
+int sckt;
 
-bool tokenizer (char * line, char * _tokens[], int * count);
+bool tokenizer (char * line, char * _tokens[]);
 int parser (char * _tokens[]);
-void send_cmd (char * line);
-
-#endif /* CLIENT_H */
-

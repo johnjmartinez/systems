@@ -30,10 +30,10 @@
 extern int errno;
 
 #define PATHMAX 255
+static char u_socket[PATHMAX+1];
 static char u_server_path[PATHMAX+1] = "/tmp";  /* default */
-static char u_socket_path[PATHMAX+1];
-static char u_log_path[PATHMAX+1];
-static char u_pid_path[PATHMAX+1];
+static char u_log[PATHMAX+1];
+static char u_pid[PATHMAX+1];
 
 /*
  @brief  If we are waiting reading from pipe and interlocutor dies abruptly (say because
@@ -46,7 +46,6 @@ void sig_pipe(int n) {
 /* @brief Handler for SIGCHLD signal */
 void sig_chld(int n) {
     int status;
-
     fprintf(stderr, "Child terminated\n");
     wait(&status); /* So no zombies */
 }
@@ -89,8 +88,8 @@ void daemon_init(const char * const path, uint mask) {
 
     /* NOTE -- From point on printf and scanf have no effect */
 
-    /* Redirecting stderr to u_log_path */
-    log = fopen(u_log_path, "aw");    /* attach stderr to u_log_path */
+    /* Redirecting stderr to u_log */
+    log = fopen(u_log, "aw");    /* attach stderr to u_log */
     fd = fileno(log);                 /* obtain file descriptor of log */
     dup2(fd, STDERR_FILENO);
     close (fd);
@@ -114,7 +113,7 @@ void daemon_init(const char * const path, uint mask) {
     setpgrp();        /* GPI: modified for linux */
 
     /* Make sure only one server is running */
-    if ( ( k = open(u_pid_path, O_RDWR | O_CREAT, 0666) ) < 0 ) exit(1);
+    if ( ( k = open(u_pid, O_RDWR | O_CREAT, 0666) ) < 0 ) exit(1);
     if ( lockf(k, F_TLOCK, 0) != 0) exit(0);
 
     /* Save server's pid without closing file (so lock remains)*/
@@ -128,16 +127,14 @@ void daemon_init(const char * const path, uint mask) {
  @brief In an infinite loop, it reads characters from sockfd and writes them to same socket
  @param[in] socket descriptor to read and write
 */
-void
-chr_echo(int sockfd) {
+void chr_echo(int sockfd) {
   for ( ; ; ) {
     ssize_t n;
     char c;
   
     n = read(sockfd, &c, 1);
-    if (n > 0) {
+    if (n > 0) 
        write(sockfd, &c, 1);
-    }
 	else if ( n < 0) { 
        perror("Negative return from Read");
        if (errno == EINTR) /* IO was interrupted by signal */
@@ -203,20 +200,20 @@ int main(int argc, char *argv[]) {
     if (argc > 1) 
       strncpy(u_server_path, argv[1], PATHMAX); /* use argv[1] */
         
-    strncat(u_server_path, "/", PATHMAX-strlen(u_server_path));
-    strncat(u_server_path, argv[0], PATHMAX-strlen(u_server_path));
+    strncat(u_server_path, "/", PATHMAX-strlen(u_server_path));     
+    strncat(u_server_path, argv[0], PATHMAX-strlen(u_server_path)); // /tmp/u-echod
 
-    strcpy(u_socket_path, u_server_path);
-    strcpy(u_pid_path, u_server_path);
+    strcpy(u_socket, u_server_path); 
+    strcpy(u_pid, u_server_path);
 
-    strncat(u_pid_path, ".pid", PATHMAX-strlen(u_pid_path));
-    strcpy(u_log_path, u_server_path);
-    strncat(u_log_path, ".log", PATHMAX-strlen(u_log_path));
+    strncat(u_pid, ".pid", PATHMAX-strlen(u_pid));
+    strcpy(u_log, u_server_path);
+    strncat(u_log, ".log", PATHMAX-strlen(u_log));
 
     daemon_init(u_server_path, 0);          /* Stay in u_server_path dir and file creation is not restricted. */
-    unlink(u_socket_path);                  /* delete socket if already existing */
+    unlink(u_socket);                       /* delete socket if already existing */
 
-    listenfd = u__listening_socket(u_socket_path);
+    listenfd = u__listening_socket(u_socket);
 
     for ( ; ; ) {
         int connfd;

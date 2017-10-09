@@ -20,8 +20,8 @@ DESCRIPTION: program creates stream socket in inet domain, Connect to TCPServer1
 
 char buf[BUFSIZE];
 char rbuf[BUFSIZE];
-void GetUserInput();
-void cleanup(char *buf);
+void get_user_input();
+void clean_up(char *buf);
 
 int rc, cc;
 int sd;
@@ -97,11 +97,11 @@ int main(int argc, char **argv ) {
         
     childpid = fork();
     if (childpid == 0) 
-        GetUserInput();
+        get_user_input();
     
     /* get data from USER, send it SERVER, receive it from SERVER, display it back to USER  */
     for(;;) {   // PERFORMED BY PARENT
-        cleanup(rbuf);
+        clean_up(rbuf);
         if( (rc=recv(sd, rbuf, sizeof(buf), 0)) < 0){
 	        perror("receiving stream message");
 	        exit(-1);
@@ -119,16 +119,16 @@ int main(int argc, char **argv ) {
     }
 }
 
-void cleanup(char *buf) {
+void clean_up(char *buf) {
     int i;
     for(i=0; i<BUFSIZE; i++) 
         buf[i]='\0';
 }
 
-void GetUserInput() { // PERFORMED BY CHILD
+void get_user_input() { // PERFORMED BY CHILD
     for(;;) {
         printf("\nType anything followed by RETURN, or type CTRL-D to exit\n");
-        cleanup(buf);
+        clean_up(buf);
         rc=read(0,buf, sizeof(buf));
         if (rc == 0) 
             break;

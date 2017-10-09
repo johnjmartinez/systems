@@ -16,8 +16,6 @@
 #include <netdb.h>
 
 int main(int argc, char *argv[]) {
-    /* A socket is just a file descriptor, i.e., an int */
-    int clientSocket;
 
     /* The addrinfo struct is used both as a parameter to getaddrinfo (to provide "hints" on
        what type of address we're using), and as a way to return the addresses associated
@@ -37,25 +35,18 @@ int main(int argc, char *argv[]) {
            };
 
        Note how it contains information used in other socket functions (family, socket type, etc.)
-       and the sockaddr for the address.
+       and the sockaddr for the address. 
 
-       We need to declare three addrinfo's: */
-    struct addrinfo hints, // Used to provide hints to getaddrinfo()
-                    *res,  // Used to return the list of addrinfo's
-                    *p;    // Used to iterate over this list
+    /* We need to declare three addrinfo's: */
+    struct addrinfo hints,  // Used to provide hints to getaddrinfo()
+                    *res,   // Used to return the list of addrinfo's
+                    *p;     // Used to iterate over this list
 
-
-    /* Host and port */
-    char *host, *port;
-
-    /* Buffer to receive bytes from the socket */
-    char buffer[100 + 1]; // +1 for '\0'
-
-    /* Number of bytes received */
-    int nbytes;
-
-    /* Used by getopt */
-    int opt;
+    char *host, *port;      /* Host and port */
+    char buffer[100 + 1];   /* Buffer to receive bytes from  socket ... +1 for '\0' */
+    int clientSocket;       /* socket = file descriptor, i.e., an int */
+    int nbytes;             /* Number of bytes received */
+    int opt;                /* Used by getopt */
 
     /* Use getopt to fetch the host and port */
     while ((opt = getopt(argc, argv, "h:p:")) != -1)
@@ -75,20 +66,15 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* We start by creating the "hints" addrinfo that is used to aid
-       getaddrinfo in returning addresses that we'll actually be able
-       to use */
+    /* We start by creating the "hints" addrinfo that is used to aid getaddrinfo in returning addresses 
+       that we'll actually be able to use */
+    memset(&hints, 0, sizeof(hints));       /* leave all unused fields of hints to zero*/
 
-    /* We want to leave all unused fields of hints to zero*/
-    memset(&hints, 0, sizeof(hints));
-
-    /* We leave the family unspecified. Based on the hostname (or IP address), 
-       getaddrinfo should be able to determine what family we want to use.
-       However, we can set this to AF_INET or AF_INET6 to force a specific version */
+    /* We leave the family unspecified. Based on the hostname (or IP address),  getaddrinfo should be 
+       able to determine what family we want to use. However, we can set this to AF_INET or AF_INET6 
+       to force a specific version */
     hints.ai_family = AF_UNSPEC;
-
-    /* We want a reliable, full-duplex socket */
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_socktype = SOCK_STREAM;     /* We want a reliable, full-duplex socket */
 
     /* Call getaddrinfo with the host and port specified in the command line */
     if (getaddrinfo(host, port, &hints, &res) != 0) {

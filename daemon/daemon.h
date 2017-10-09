@@ -1,10 +1,14 @@
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -15,7 +19,14 @@
 #define O_FOUT O_WRONLY|O_CREAT|O_TRUNC
 #define O_FIN  O_RDONLY
 
-// SHELL GLOBALS
+#define LOG_FILE "/tmp/yashd.log"
+
+// daemon.c
+
+void d_init();          // daemon 
+void s_init();          // socket/connection init
+void shell_job ();
+void error_and_exit(const char *msg) ;
 
 typedef struct job {
   struct job * next;    // next proc in pipe
@@ -35,13 +46,8 @@ int send_to_bg;         // in cmd line
 int fwd, bck;           // fwd = out = fd for >; bck = in = fd for <
 int pipfd[2];           // | in cmd line
 
-// looper.c
-void yash_init();
-
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
-
-// parser.c
 bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);
 

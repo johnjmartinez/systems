@@ -26,7 +26,7 @@
    "\n#" prompt (end of receive) - server message delimeter)
    
  - LOGGING 
-   threads must perform syslog-like formattedlogging in file /tmp/yashd.log 
+   threads must perform syslog-like formatted logging in file /tmp/yashd.log 
    "<date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>\n"
    Sep 18 10:02:55 yashd[127.0.0.1:7815]: echo $PATH
  
@@ -51,7 +51,7 @@
 * Accept a connection with accept() system call; typically blocks until a client connects with server.
 * Send / receive data.
 
-# https://stackoverflow.com/questions/42643276/how-to-connect-multiple-clients-to-a-single-server-in-c-on-windows-visual-st
+# https://stackoverflow.com/questions/42643276
 > If a connection comes in, 'accept' will give you a new socket object. 
 > You still have the original listening socket, which waits for new connections, 
   but you also have a second socket now with an already established connection to a client.
@@ -62,10 +62,12 @@
 ! umask  - specifies processes permissions
 ! setsid - Set Session Id
 ! new_sock = malloc(sizeof *new_sock);
-! Should not assume null termination - se read_size to terminate the string yourself (and make your buffer bigger by one character)
+! Should not assume null termination - se read_size to terminate the string yourself (and make your 
+  buffer bigger by one character)
 ! Handle SIGPIPE.
 ! Write is not guaranteed to send a complete message; need to wrap it into a loop  
 ! its not good idea to access a file descriptor in two threads simultaneously
-! have provision to exit infinite while loop on error conditions. Check 'errno' and act upon it accordingly.
+! have provision to exit infinite while loop on error conditions. Check 'errno' and act upon it 
+  accordingly.
 ! if 'recv' returned zero, other end closed the connection; close socket and exit loop
 ! 'send' will then fail with "Broken Pipe" error. Quit loop and 'join'

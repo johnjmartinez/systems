@@ -35,6 +35,6 @@ int main(int argc, char** argv) {
         if (cc == 0) 
             exit (0);
         buf[cc] = '\0';
-   	    printf("message received: %s\n", buf);
+   	    printf("message received: \'%s\'\n", buf);
    }
 }
