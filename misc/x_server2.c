@@ -55,11 +55,12 @@ int main(int argc, char *argv[]) {
              do_stuff(newsockfd);
              exit(0);
          }
-         else close(newsockfd); // PARENT
+         else 
+            close(newsockfd);   // PARENT
      } 
      
      close(sockfd);
-     return 0; /* SHOULD never get here */
+     return 0;                  /* SHOULD never get here */
 }
 
 /*

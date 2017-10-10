@@ -20,13 +20,18 @@
 #define O_FIN  O_RDONLY
 
 #define LOG_FILE "/tmp/yashd.log"
+#define PORT_NUM 3826
+#define MAX_CONNECTIONS 7
 
 // daemon.c
 
 void d_init();          // daemon 
 void s_init();          // socket/connection init
 void shell_job ();
+void do_stuff (int sock);
 void error_and_exit(const char *msg) ;
+
+// for shell cmd stuff
 
 typedef struct job {
   struct job * next;    // next proc in pipe
