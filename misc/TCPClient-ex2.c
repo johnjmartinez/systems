@@ -43,13 +43,13 @@ int main(int argc, char **argv ) {
     /* get TCPClient Host information, NAME and INET ADDRESS */
     gethostname(ThisHost, MAXHOSTNAME);     /* OR strcpy(ThisHost,"localhost"); */
     
-    printf("----TCP/Cleint running at host NAME: %s\n", ThisHost);
+    printf("----TCP/Client running at host NAME: %s\n", ThisHost);
     if  ( (hp = gethostbyname(ThisHost)) == NULL ) {
         fprintf(stderr, "Can't find host %s\n", argv[1]);
         exit(-1);
     }
     bcopy ( hp->h_addr, &(server.sin_addr), hp->h_length);
-    printf("    (TCP/Cleint INET ADDRESS is: %s )\n", inet_ntoa(server.sin_addr));
+    printf("    (TCP/Client INET ADDRESS is: %s )\n", inet_ntoa(server.sin_addr));
     
     /* get TCPServer-ex2 Host information, NAME and INET ADDRESS */
     if ( (hp = gethostbyname(argv[1])) == NULL ) {
