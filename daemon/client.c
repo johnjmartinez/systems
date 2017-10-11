@@ -11,11 +11,11 @@
 */
 
 static void catch_C(int signo) { // ctrl+c
-    send (sckt, "CTL c \n", 7, 0);
+    send (sckt_fd, "CTL c \n", 7, 0);
 }
 
 static void catch_Z(int signo) { // ctrl+z
-    send (sckt, "CTL z \n", 7, 0);
+    send (sckt_fd, "CTL z \n", 7, 0);
 }
 
 int main (int argc, char* argv[]) {
@@ -27,29 +27,42 @@ int main (int argc, char* argv[]) {
     char * _tokens[LINE_MAX / 3];
     char * tmp;
 
-    int skip;
+    int skip, rc;
     struct sockaddr_in server;
     struct hostent * target;
        
-    sckt = socket (AF_INET, SOCK_STREAM, 0);
+    sckt_fd = socket (AF_INET, SOCK_STREAM, 0);
     target = gethostbyname(argv[1]);
     server.sin_port = htons (PORT_NUM);
     server.sin_family = AF_INET;
-    bcopy ( target->h_addr, &(server.sin_addr.s_addr), target->h_length );
-    connect ( sckt, (struct  sockaddr *) &server, sizeof(server) );
+    memcpy ( target->h_addr, &server.sin_addr.s_addr, target->h_length );
+    connect ( sckt_fd, (struct  sockaddr *) &server, sizeof(server) );
+
+    // TODO -- Handle SIGPIPE from server going down?
 
     while (1) {
 
         // TODO -- get command prompt from server
-        // TODO -- Handle SIGPIPE from server going down?
-       printf("# ");
+        //for(;;) {
+            //read (sckt_fd, &buffer, 1);
+            if ( (rc = recv(sckt_fd, buf, sizeof(buf), 0)) < 0) 
+                error("receiving stream message");
+            //write (STDOUT_FILENO, &buf, 256); 
+            if (rc) {
+                buf[rc]='\0';
+                printf("%s", buf);
+            }
+            else {
+                printf("Disconnected ...");
+                break;
+            } 
+        //}
+        
         fflush(stdout);
         skip = false;
 
-        if (fgets(line, LINE_MAX, stdin) == NULL) { // catch ctrl+d (EOF) on empty line
-            printf("\n");
-            return (0);  // TODO -- close connection?
-        }
+        if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
+            break;
 
         tmp = strdup (line);
         skip = tokenizer (tmp, _tokens);
@@ -60,18 +73,18 @@ int main (int argc, char* argv[]) {
 
         skip = parser (_tokens);
         if (skip) {
-            if (skip > 1) { // QUIT
-                printf("\n");
-                return (0); // TODO -- close connection?
-            }
+            if (skip > 1)  // QUIT
+                break;
             free(tmp);
             continue;
         }
 
-        send (sckt, line, strlen(line), 0 );
+        send (sckt_fd, line, strlen(line), 0 );
         free(tmp);
     }
-
+    
+    close (sckt_fd);
+    printf("\n");
     return (EXIT_SUCCESS);
 }
 
@@ -95,15 +108,18 @@ bool tokenizer (char * line, char * _tokens[]) {
 int parser (char * _tokens[]) {
     
     // ERROR CHECKING -- check first token is either CMD, CTL or quit
-    if (strncmp(_tokens[0], "CMD", 3) == 0) {
+    if (strncmp(_tokens[0], "CMD", 3) == 0) 
         return 0;
-    }
-    else if (strncmp(_tokens[0], "CTL", 3) == 0) {
+    else if (strncmp(_tokens[0], "CTL", 3) == 0) 
         return 0;
-    }
-    else if (strncmp(_tokens[0], "quit", 4) == 0) {
+    else if (strncmp(_tokens[0], "quit", 4) == 0) 
         return 2; // TODO -- check only token: _tokens[1] == NULL ? 
-    }
+    
     printf(" -ERROR: INVALID COMMAND\n");
     return 1; 
+}
+
+void error(const char *msg) {
+    perror(msg);
+    exit(0);
 }

@@ -13,9 +13,12 @@
 
 #define LINE_MAX 204    // CMD/CTL +\ + <cmd>
 #define	DELIM " \t\a\r" // took out \n so that client would recognize empty line as invalid
-#define PORT_NUM 34567
+#define PORT_NUM 3826
 
-int sckt;
+int sckt_fd;
+char buffer;
+char buf[256];
 
 bool tokenizer (char * line, char * _tokens[]);
 int parser (char * _tokens[]);
+void error(const char *msg);

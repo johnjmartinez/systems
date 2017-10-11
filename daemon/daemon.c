@@ -1,42 +1,45 @@
 #include "daemon.h"
 
-int sock_fd, new_sock_fd, pid, log_fd;
+int sckt_fd, new_sckt_fd, curr_pid, pid_fd, log_fd, fd;
 struct sockaddr_in server_addr, client_addr;
 char buff[512];
 
-
-int main (int argc, char * argv[]) {
+int main () {
     
-    d_init();     // daemon init
-    s_init(argv); // socket init: socket(), bind(), listen()
+    d_init();   // daemon init
+    s_init();   // socket init: socket(), bind(), listen()
 
     socklen_t client_len = sizeof(client_addr);
     
     while(1) {
-        new_sock_fd = accept(sock_fd, (struct sockaddr *) &client_addr, &client_len);
-        sprintf (buff, "%6d", new_sock_fd);
-            
-        write (log_fd, "\tNEW CONNECTION", 15);
+        new_sckt_fd = accept(sckt_fd, (struct sockaddr *) &client_addr, &client_len);
+        
+        log_time();
+        write (log_fd, "\tNEW CONNECTION ", 16);
+        sprintf (buff, "%6d", new_sckt_fd);
         write (log_fd, buff, strlen(buff));
         write (log_fd, "\n", 1);
 
-        // TODO -- create new thread with new_sock_fd
+        // TODO -- create new thread with new_sckt_fd
         // TODO -- log to LOGFILE?
            
-         if ( (pid = fork ()) < 0)
+         if ( (curr_pid = fork ()) < 0)
              error_and_exit("ERROR on fork");
              
-         if (pid == 0) {        // CHILD
-             close(sock_fd);
-             do_stuff(new_sock_fd);
+         if ( !curr_pid ) {     // CHILD
+             close(sckt_fd);
+             do_stuff(new_sckt_fd);
              exit(0);
          }
          else 
-            close(new_sock_fd);   // PARENT      
+            close(new_sckt_fd); // PARENT      
     }
     
-    close(sock_fd);
-    write (log_fd, "CLOSING SERVER\n", 17);
+    close(sckt_fd);
+    close(pid_fd);
+    
+    log_time();
+    write (log_fd, "\tCLOSING SERVER\n", 16);
     close(log_fd);
 
     printf("\n");
@@ -76,45 +79,56 @@ static void catch_Z(int signo) {   // ctrl+z
     fprintf(stdout, "\n");
 }
 
-void s_init (char * argv[]) {
-    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+void s_init () {
+    
+    socklen_t size;
+    log_time();
+    write (log_fd, "STARTING SERVER ... ", 16);
+
+    sckt_fd = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if ( sckt_fd < 0 )
+ 	    error_and_exit("ERROR: s_init() -- starting socket\n");
     
     bzero ((void *)&server_addr, sizeof(server_addr)); // init to zeroes
-
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr =  htonl(INADDR_ANY);
-    server_addr.sin_port =  htons(PORT_NUM);
-
-    bind ( sock_fd, (struct  sockaddr *) &server_addr, sizeof(server_addr) );
-    listen ( sock_fd, MAX_CONNECTIONS ); 
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(PORT_NUM);
     
-    write (log_fd, "STARTING SERVER\n", 17);
+    reusePort(sckt_fd);
+    if ( bind(sckt_fd, (struct  sockaddr *) &server_addr, sizeof(server_addr)) )
+  	    error_and_exit("ERROR: s_init() -- binding socket\n");
+       
+    size = sizeof(server_addr);
+    if ( getsockname (sckt_fd, (struct sockaddr *) &server_addr, &size) ) 
+	    error_and_exit("ERROR: s_init() -- getting socket name\n");
+    
+    fprintf(stderr, "at: %d", ntohs(server_addr.sin_port));
+    listen ( sckt_fd, MAX_CONNECTIONS ); 
 }
 
 void d_init() {
     
     pid_t pid;
-    static FILE * log ; 
-    int fd, pid_fd;
+    static FILE * log_file;
+    //static FILE * pid_file ; 
 
-    if ( ( pid = fork() ) < 0 ) 
-        error_and_exit("ERROR: d_init - cannot fork");
-    else if (pid > 0) 
-        exit(0);                    // PARENT EXITS - server to background
+    if ( (pid = fork()) < 0 ) 
+        error_and_exit("ERROR: d_init - cannot fork\n");
+    else if (pid) 
+        exit(0);                        // PARENT EXITS - server to background
 
     for (fd = getdtablesize()-1; fd>0; fd--) 
-        close(fd);                  // close any open fds
+        close(fd);                      // close any open fds
 
     if ( (fd = open("/dev/null", O_RDWR)) < 0) 
-        error_and_exit("ERROR: d_init - can't open /dev/null");
-    dup2(fd, STDIN_FILENO);         // redirect STDIN to /dev/null
-    dup2(fd, STDOUT_FILENO);        // redirect STDOUT to /dev/null
+        error_and_exit("ERROR: d_init - can't open /dev/null\n");
+    dup2 (fd, STDIN_FILENO);            // redirect STDIN to /dev/null
+    dup2 (fd, STDOUT_FILENO);           // redirect STDOUT to /dev/null
     close (fd);
 
-    log = fopen(LOG_FILE, "aw");    // open: write + append     
-    log_fd = fileno(log);               // get log file descrpt
-    dup2(log_fd, STDERR_FILENO);        // redirect STDERR to log
-    //close (fd);
+    log_file = fopen (LOG_FILE, "aw");  // open: write + append     
+    log_fd = fileno (log_file);         // get log file descrpt
+    dup2 (log_fd, STDERR_FILENO);       // redirect STDERR to log
 
     /* TODO -- SIGCHLD & SIGPIPE
     if ( signal(SIGCHLD, sig_chld) < 0 ) 
@@ -123,19 +137,14 @@ void d_init() {
         error_and_exit("Signal SIGPIPE");
      */
     
-    chdir("/tmp");    
-    //umask(0);                     // set umask 
-    setsid();                       // becoming session leader 
-    pid = getpid();                 // put self in new process group 
+    pid = setsid();                     // put self in new process group 
     setpgrp();        
 
-    // Make sure only one server is running
-    if ( ( pid_fd = open("yashd.pid", O_RDWR | O_CREAT, 0666) ) < 0 ) 
-            exit(1);
-    if ( lockf(pid_fd, F_TLOCK, 0) != 0 ) 
-            exit(0);
-
-    // Save server's pid w/o closing file (so lock remains)
+    // Save server's pid 
+    if ( (pid_fd = open(PID_FILE, O_RDWR|O_CREAT, 0666)) < 0 ) 
+        exit(1);
+    if ( lockf(pid_fd, F_TLOCK, 0) != 0) 
+        exit(0);
     sprintf (buff, "%6d", pid);
     write (pid_fd, buff, strlen(buff));
 }
@@ -192,23 +201,42 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
     }
 }
 
-void do_stuff (int sock) {
-   int n;
-   char buffer[512];
+void do_stuff (int sckt) {
+    char buffer[512];
+    
+    if ( write(sckt, "\n#", 2) < 0) 
+        error_and_exit("ERROR writing to socket\n");
       
-   bzero (buffer, 512);
-   n = read (sock, buffer, 511);
-   if (n < 0) 
-       error_and_exit("ERROR reading from socket");
+    bzero (buffer, 512);
+    if (read (sckt, buffer, 511) < 0) 
+        error_and_exit("ERROR reading from socket\n");
    
-   fprintf (stderr, "\t message: %s\n", buffer);
-   n = write(sock, "From server:msg received", 24);
-   if (n < 0) 
-       error_and_exit("ERROR writing to socket");
+    fprintf (stderr, "\t message: %s\n", buffer);
+    if ( write(sckt, "From server:msg received", 24) < 0) 
+        error_and_exit("ERROR writing to socket\n");
 }
 
 void error_and_exit(const char *msg) {
     perror(msg);
     exit(1);
 }
+
+void log_time() {
+    
+    char out[20];
+    time_t now;
+    time(&now);
+
+    struct tm * now_tm;
+    now_tm = localtime(&now);
+
+    strftime (out, 20, "\n%b %d %H:%M:%S ", now_tm);
+    write (log_fd, out, strlen(out));   // OR   fprintf (stderr, "%s", out);
+}
+
+void reusePort(int s){
+    int one=1;
+    if ( setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &one,sizeof(one)) == -1 )
+        error_and_exit("ERROR: setsockopt -- SO_REUSEPORT\n");
+} 
 

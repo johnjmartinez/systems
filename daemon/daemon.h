@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <time.h>
+
 
 #define LINE_MAX 200
 #define	DELIM " \t\n\a\r"
@@ -20,6 +22,7 @@
 #define O_FIN  O_RDONLY
 
 #define LOG_FILE "/tmp/yashd.log"
+#define PID_FILE "/tmp/yashd.pid"
 #define PORT_NUM 3826
 #define MAX_CONNECTIONS 7
 
@@ -28,8 +31,10 @@
 void d_init();          // daemon 
 void s_init();          // socket/connection init
 void shell_job ();
-void do_stuff (int sock);
-void error_and_exit(const char *msg) ;
+void do_stuff (int sckt);
+void error_and_exit(const char *msg);
+void log_time();
+void reusePort(int s);
 
 // for shell cmd stuff
 
