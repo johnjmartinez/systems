@@ -1,8 +1,10 @@
+_*
+apue*
+nbproject
 *.o
 *.out
 *tmp*
 yash
-_*
-apue*
-nbproject
 yashd
+yash*log
+yash*pid

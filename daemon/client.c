@@ -40,7 +40,7 @@ int main (int argc, char* argv[]) {
 
     // TODO -- Handle SIGPIPE from server going down?
 
-    while (1) {
+    //while (1) {
 
         // TODO -- get command prompt from server
         //for(;;) {
@@ -54,10 +54,10 @@ int main (int argc, char* argv[]) {
             }
             else {
                 printf("Disconnected ...");
-                break;
+                //break;
             } 
         //}
-        
+    /*    
         fflush(stdout);
         skip = false;
 
@@ -81,7 +81,9 @@ int main (int argc, char* argv[]) {
 
         send (sckt_fd, line, strlen(line), 0 );
         free(tmp);
-    }
+    
+     */
+    //}
     
     close (sckt_fd);
     printf("\n");

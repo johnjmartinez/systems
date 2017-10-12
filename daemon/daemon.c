@@ -11,7 +11,7 @@ int main () {
 
     socklen_t client_len = sizeof(client_addr);
     
-    while(1) {
+    //while(1) {
         new_sckt_fd = accept(sckt_fd, (struct sockaddr *) &client_addr, &client_len);
         
         log_time();
@@ -21,8 +21,11 @@ int main () {
         write (log_fd, "\n", 1);
 
         // TODO -- create new thread with new_sckt_fd
-        // TODO -- log to LOGFILE?
-           
+        
+        if ( write(new_sckt_fd, "\n#", 2) < 0) 
+            error_and_exit("ERROR writing to socket\n");
+                
+        /*   
          if ( (curr_pid = fork ()) < 0)
              error_and_exit("ERROR on fork");
              
@@ -32,8 +35,9 @@ int main () {
              exit(0);
          }
          else 
-            close(new_sckt_fd); // PARENT      
-    }
+            close(new_sckt_fd); // PARENT  
+         */    
+    //}
     
     close(sckt_fd);
     close(pid_fd);
@@ -102,7 +106,7 @@ void s_init () {
     if ( getsockname (sckt_fd, (struct sockaddr *) &server_addr, &size) ) 
 	    error_and_exit("ERROR: s_init() -- getting socket name\n");
     
-    fprintf(stderr, "at: %d", ntohs(server_addr.sin_port));
+    fprintf(stderr, "at port: %d", ntohs(server_addr.sin_port));
     listen ( sckt_fd, MAX_CONNECTIONS ); 
 }
 
