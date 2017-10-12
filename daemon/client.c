@@ -40,24 +40,21 @@ int main (int argc, char* argv[]) {
 
     // TODO -- Handle SIGPIPE from server going down?
 
-    //while (1) {
+    //for(;;) {
 
         // TODO -- get command prompt from server
-        //for(;;) {
-            //read (sckt_fd, &buffer, 1);
-            if ( (rc = recv(sckt_fd, buf, sizeof(buf), 0)) < 0) 
-                error("receiving stream message");
-            //write (STDOUT_FILENO, &buf, 256); 
-            if (rc) {
-                buf[rc]='\0';
-                printf("%s", buf);
-            }
-            else {
-                printf("Disconnected ...");
-                //break;
-            } 
-        //}
-    /*    
+        if ( (rc = recv(sckt_fd, buf, sizeof(buf), 0)) < 0)
+            error("receiving stream message");
+            
+        if (rc) {
+            buf[rc]='\0';
+            printf("%s", buf);
+        }
+        else {
+            printf("Disconnected? ...");
+            //break;
+        } 
+        
         fflush(stdout);
         skip = false;
 
@@ -81,8 +78,6 @@ int main (int argc, char* argv[]) {
 
         send (sckt_fd, line, strlen(line), 0 );
         free(tmp);
-    
-     */
     //}
     
     close (sckt_fd);

@@ -15,15 +15,13 @@ int main () {
         new_sckt_fd = accept(sckt_fd, (struct sockaddr *) &client_addr, &client_len);
         
         log_time();
-        write (log_fd, "\tNEW CONNECTION ", 16);
+        write (log_fd, "NEW CONNECTION ", 15);
         sprintf (buff, "%6d", new_sckt_fd);
         write (log_fd, buff, strlen(buff));
         write (log_fd, "\n", 1);
 
         // TODO -- create new thread with new_sckt_fd
-        
-        if ( write(new_sckt_fd, "\n#", 2) < 0) 
-            error_and_exit("ERROR writing to socket\n");
+        do_stuff(new_sckt_fd);
                 
         /*   
          if ( (curr_pid = fork ()) < 0)
@@ -43,7 +41,7 @@ int main () {
     close(pid_fd);
     
     log_time();
-    write (log_fd, "\tCLOSING SERVER\n", 16);
+    write (log_fd, "CLOSING SERVER", 14);
     close(log_fd);
 
     printf("\n");
@@ -215,7 +213,7 @@ void do_stuff (int sckt) {
     if (read (sckt, buffer, 511) < 0) 
         error_and_exit("ERROR reading from socket\n");
    
-    fprintf (stderr, "\t message: %s\n", buffer);
+    fprintf (stderr, "\tmessage: %s\n", buffer);
     if ( write(sckt, "From server:msg received", 24) < 0) 
         error_and_exit("ERROR writing to socket\n");
 }
