@@ -3,6 +3,7 @@
 int sckt_fd, new_sckt_fd, curr_pid, pid_fd, log_fd, fd;
 struct sockaddr_in server_addr, client_addr;
 char buff[512];
+pthread_t p;
 
 int main () {
     
@@ -10,45 +11,33 @@ int main () {
     s_init();   // socket init: socket(), bind(), listen()
 
     socklen_t client_len = sizeof(client_addr);
-    
-    //while(1) {
+    //for (;;) {
         new_sckt_fd = accept(sckt_fd, (struct sockaddr *) &client_addr, &client_len);
         
         log_time();
-        write (log_fd, "NEW CONNECTION ", 15);
-        sprintf (buff, "%6d", new_sckt_fd);
-        write (log_fd, buff, strlen(buff));
-        write (log_fd, "\n", 1);
+        fprintf (stderr, "NEW CONNECTION at %6d", new_sckt_fd);
 
         // TODO -- create new thread with new_sckt_fd
-        do_stuff(new_sckt_fd);
-                
-        /*   
-         if ( (curr_pid = fork ()) < 0)
-             error_and_exit("ERROR on fork");
-             
-         if ( !curr_pid ) {     // CHILD
-             close(sckt_fd);
-             do_stuff(new_sckt_fd);
-             exit(0);
-         }
-         else 
-            close(new_sckt_fd); // PARENT  
-         */    
+        // TODO -- create thread pool (array) of size MAX_CONNECTIONS
+        // TODO -- create bool array available_threads (stack?)
+        // TODO -- while accepting new connections, join thread 
+        
+        pthread_create(&p, NULL, do_stuff, (void *) new_sckt_fd) ;
+        pthread_join(p, NULL);
     //}
-    
+    close(new_sckt_fd);
     close(sckt_fd);
     close(pid_fd);
     
     log_time();
-    write (log_fd, "CLOSING SERVER", 14);
+    fprintf (stderr, "CLOSING SERVER");
     close(log_fd);
 
     printf("\n");
     return(1);
 }
 
-// ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
+/*// ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
 static void catch_C (int signo) { // ctrl+c
 
     job * i;
@@ -62,9 +51,9 @@ static void catch_C (int signo) { // ctrl+c
         }
     }
     fprintf(stdout, "\n");
-}
+}*/
 
-// ONLY APPLY TO FG (running) JOBS  -- hence using cgid
+/*// ONLY APPLY TO FG (running) JOBS  -- hence using cgid
 static void catch_Z(int signo) {   // ctrl+z
 
     job * i;
@@ -79,24 +68,24 @@ static void catch_Z(int signo) {   // ctrl+z
         }
     }
     fprintf(stdout, "\n");
-}
+}*/
 
 void s_init () {
     
     socklen_t size;
-    log_time();
-    write (log_fd, "STARTING SERVER ... ", 16);
+    log_time ();
+    fprintf (stderr, "STARTING SERVER ... ");
 
     sckt_fd = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if ( sckt_fd < 0 )
- 	    error_and_exit("ERROR: s_init() -- starting socket\n");
+ 	    error_and_exit ("ERROR: s_init() -- starting socket\n");
     
     bzero ((void *)&server_addr, sizeof(server_addr)); // init to zeroes
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(PORT_NUM);
     
-    reusePort(sckt_fd);
+    reusePort (sckt_fd);
     if ( bind(sckt_fd, (struct  sockaddr *) &server_addr, sizeof(server_addr)) )
   	    error_and_exit("ERROR: s_init() -- binding socket\n");
        
@@ -147,7 +136,7 @@ void d_init() {
         exit(1);
     if ( lockf(pid_fd, F_TLOCK, 0) != 0) 
         exit(0);
-    sprintf (buff, "%6d", pid);
+    sprintf (buff, "%d\n", pid);
     write (pid_fd, buff, strlen(buff));
 }
 
@@ -203,19 +192,22 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
     }
 }
 
-void do_stuff (int sckt) {
-    char buffer[512];
-    
-    if ( write(sckt, "\n#", 2) < 0) 
+void * do_stuff (void * arg) {
+    char buffer[256];
+    int sckt = (int) arg;
+     
+    if ( write (sckt, "\n# ", 3) < 0) 
         error_and_exit("ERROR writing to socket\n");
       
-    bzero (buffer, 512);
-    if (read (sckt, buffer, 511) < 0) 
+    bzero (buffer, 256);
+    if (read (sckt, buffer, 255) < 0) 
         error_and_exit("ERROR reading from socket\n");
    
-    fprintf (stderr, "\tmessage: %s\n", buffer);
+    fprintf (stderr, "\n\tmessage: \'%s\'", buffer);
     if ( write(sckt, "From server:msg received", 24) < 0) 
-        error_and_exit("ERROR writing to socket\n");
+        error_and_exit("ERROR writing to socket\n");  
+    
+    pthread_exit(NULL);
 }
 
 void error_and_exit(const char *msg) {

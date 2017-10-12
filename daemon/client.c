@@ -20,6 +20,11 @@ static void catch_Z(int signo) { // ctrl+z
 
 int main (int argc, char* argv[]) {
     
+    if (argc < 2) {
+       fprintf(stderr,"Usage: %s hostname\n", argv[0]);
+       exit(0);
+    }
+    
     if (signal(SIGINT, catch_C) == SIG_ERR) printf("signal(SIGINT) error");
     if (signal(SIGTSTP, catch_Z) == SIG_ERR) printf("signal(SIGTSTP) error");
     
@@ -27,7 +32,7 @@ int main (int argc, char* argv[]) {
     char * _tokens[LINE_MAX / 3];
     char * tmp;
 
-    int skip, rc;
+    int skip, num;
     struct sockaddr_in server;
     struct hostent * target;
        
@@ -35,48 +40,50 @@ int main (int argc, char* argv[]) {
     target = gethostbyname(argv[1]);
     server.sin_port = htons (PORT_NUM);
     server.sin_family = AF_INET;
-    memcpy ( target->h_addr, &server.sin_addr.s_addr, target->h_length );
-    connect ( sckt_fd, (struct  sockaddr *) &server, sizeof(server) );
-
+    bcopy ( target->h_addr, &server.sin_addr.s_addr, target->h_length );
+    if ( connect ( sckt_fd, (struct  sockaddr *) &server, sizeof(server) ) < 0)
+        error_n_exit ("ERROR connecting");
     // TODO -- Handle SIGPIPE from server going down?
 
     //for(;;) {
-
-        // TODO -- get command prompt from server
-        if ( (rc = recv(sckt_fd, buf, sizeof(buf), 0)) < 0)
-            error("receiving stream message");
-            
-        if (rc) {
-            buf[rc]='\0';
-            printf("%s", buf);
-        }
-        else {
-            printf("Disconnected? ...");
-            //break;
-        } 
         
         fflush(stdout);
         skip = false;
 
-        if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
-            break;
+        // TODO -- get command prompt from server
+        num = read (sckt_fd, buf, sizeof(buf));
+        if (num < 0)
+            error_n_exit ("ERROR: receiving stream msg");
+            
+        if (num) {
+            buf[num]='\0';
+            printf("%s", buf);
+        }
+        
+        else {    
+            printf("Disconnected? ...");
+            //break;
+        } 
 
+        if (fgets(line, LINE_MAX, stdin) == NULL);  // catch ctrl+d (EOF) on empty line
+            //break;
+        
         tmp = strdup (line);
         skip = tokenizer (tmp, _tokens);
-        if (skip || (_tokens[0] == NULL)) {
+        /*if (skip || (_tokens[0] == NULL)) {
             free(tmp);
             continue;
-        }
+        }*/
 
         skip = parser (_tokens);
-        if (skip) {
+        /*if (skip) {
             if (skip > 1)  // QUIT
                 break;
             free(tmp);
             continue;
-        }
+        }*/
 
-        send (sckt_fd, line, strlen(line), 0 );
+        write (sckt_fd, line, strlen(line));
         free(tmp);
     //}
     
@@ -116,7 +123,7 @@ int parser (char * _tokens[]) {
     return 1; 
 }
 
-void error(const char *msg) {
-    perror(msg);
+void error_n_exit (const char *msg) {
+    perror (msg);
     exit(0);
 }

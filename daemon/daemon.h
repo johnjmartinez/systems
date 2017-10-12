@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 
 #define LINE_MAX 200
@@ -31,7 +32,7 @@
 void d_init();          // daemon 
 void s_init();          // socket/connection init
 void shell_job ();
-void do_stuff (int sckt);
+void * do_stuff (void * arg);
 void error_and_exit(const char *msg);
 void log_time();
 void reusePort(int s);

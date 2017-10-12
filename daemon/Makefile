@@ -6,13 +6,12 @@ SOURCES=daemon.c tokenizer.c executor.c jobatron.c
 OBJECTS=$(SOURCES:.c=.o)
 
 all: $(SOURCES) $(EXECUTABLE) yash
-#all : yash
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 .c.o:
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
     
 yash: client.o
 	$(CC) -o yash client.o
