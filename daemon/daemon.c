@@ -210,7 +210,8 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
 void * do_stuff (void * arg) {
     
     t_stuff * data = (t_stuff *) arg;
-    
+    data->head_job = NULL;
+
     int pipe_pos, fwd_pos, bck_pos, count;
     char line[LINE_MAX];
     char * tokens[LINE_MAX/3];
@@ -234,8 +235,7 @@ void * do_stuff (void * arg) {
     log_time(data->log_fd);
     fprintf (stderr, "message: \'%s\'", line); 
     
-    data->head_job = NULL;
-    executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line, data->head_job);
+    executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line, data);
     
     avail[data->tid] = 2;
     close (sckt);

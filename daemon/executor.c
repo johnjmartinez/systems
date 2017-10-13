@@ -1,12 +1,10 @@
 #include "daemon.h"
 
-int cid1, cid2; // TODO -- move to every exec_*()
-// TODO -- change job to t_stuff
-bool executor (char * cmds[], int pip, int out, int in, int count, char * line, job * head ) {
+bool executor (char * cmds[], int pip, int out, int in, int count, char * line, t_stuff * data) {
 
-    int rc, status; 
-    int to_bg;                                                  // in cmd line
-    fflush (0);
+    int rc, status,  to_bg;                                     // in cmd line
+    job * head = data->head_job;
+    
 
     to_bg = (strncmp (cmds[count-1],"&",1) == 0);
     if (to_bg) cmds[count-1] = NULL;
@@ -90,7 +88,7 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
 }
 // TODO -- add dup2(sockfd, STDOUT_FILENO) to all execs
 void exec_one (char * cmd[], job * j, int bg) {
-
+    int cid1; 
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork failed");
     else if (!cid1) {                                           // CHILD
@@ -109,6 +107,7 @@ void exec_one (char * cmd[], job * j, int bg) {
 }
 
 void exec_fwd (char * cmd[], char * f_out, job * j, int bg) {
+    int cid1; 
     int fwd;    // fwd = out = fd for >
 
     if ( (cid1=fork ()) < 0 ) 
@@ -134,6 +133,7 @@ void exec_fwd (char * cmd[], char * f_out, job * j, int bg) {
 }
 
 void exec_bck (char * cmd[], char * f_in, job * j, int bg) {
+    int cid1; 
     int bck;    // bck = in = fd for <
 
     if ( (cid1=fork ()) < 0 )  
@@ -159,6 +159,7 @@ void exec_bck (char * cmd[], char * f_in, job * j, int bg) {
 }
 
 void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg) {
+    int cid1; 
     int fwd, bck;   // fwd = out = fd for >; bck = in = fd for <
 
     if ( (cid1=fork ()) < 0 ) 
@@ -186,6 +187,7 @@ void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg) {
 }
 
 void exec_pipe (char * cmd1[], char * cmd2[], job * j, int bg) {
+    int cid1, cid2; 
     int pipfd[2];   // | in cmd line
     pipe (pipfd);
 
@@ -218,6 +220,7 @@ void exec_pipe (char * cmd1[], char * cmd2[], job * j, int bg) {
 }
 
 void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg) {
+    int cid1, cid2; 
     int fwd;        // fwd = out = fd for >
     int pipfd[2];   // | in cmd line
 
@@ -264,6 +267,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg)
 }
 
 void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j, int bg) {
+    int cid1, cid2; 
     int bck;        // bck = in = fd for <
     int pipfd[2];   // | in cmd line
 
@@ -310,6 +314,7 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j, int bg) {
 }
 
 void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j, int bg) {
+    int cid1, cid2; 
     int fwd, bck;   // fwd = out = fd for >; bck = in = fd for <
     int pipfd[2];   // | in cmd line
 

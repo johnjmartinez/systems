@@ -64,7 +64,7 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);
 
 // executor.c
-bool executor (char * cmds[], int pip, int out, int in, int count, char * line, job * head ); // waitpid
+bool executor (char * cmds[], int pip, int out, int in, int count, char * line, t_stuff * data ); // waitpid
 void exec_one (char * cmd[], job * j, int bg );
 void exec_bck (char * cmd[], char * f_in, job * j, int bg );
 void exec_fwd (char * cmd[], char * f_out, job * j, int bg );
