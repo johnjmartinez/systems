@@ -33,9 +33,9 @@ void d_init();          // daemon
 void s_init();          // socket/connection init
 void shell_job ();
 void * do_stuff (void * arg);
-void error_and_exit(const char *msg);
-void log_time();
-void reusePort(int s);
+void error_n_exit(const char *msg);
+void log_time(int fd);
+void reuse_port(int s);
 
 // for shell cmd stuff
 

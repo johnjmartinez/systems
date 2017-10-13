@@ -46,7 +46,6 @@ int main (int argc, char* argv[]) {
     // TODO -- Handle SIGPIPE from server going down?
 
     //for(;;) {
-        
         fflush(stdout);
         skip = false;
 

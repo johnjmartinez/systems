@@ -1,35 +1,65 @@
 #include "daemon.h"
 
-int sckt_fd, new_sckt_fd, curr_pid, pid_fd, log_fd, fd;
-struct sockaddr_in server_addr, client_addr;
+int listen_fd, request_fd, pid_fd, log_fd;
+struct sockaddr_in host_addr, remote_addr;
 char buff[512];
-pthread_t p;
+
+typedef struct thread_stuff { 
+    int tid;
+    int sckt;
+    int log_fd;
+    struct sockaddr_in remote;
+} t_stuff;
+
+pthread_t p[MAX_CONNECTIONS];
+t_stuff t_data[MAX_CONNECTIONS];
+static int avail[MAX_CONNECTIONS];
+
 
 int main () {
+    int i, served;
     
     d_init();   // daemon init
     s_init();   // socket init: socket(), bind(), listen()
 
-    socklen_t client_len = sizeof(client_addr);
+    for (i = 0 ;  i<MAX_CONNECTIONS; i++) {
+        avail[i] = 1;
+        t_data[i].tid = i;
+        t_data[i].log_fd = log_fd;
+    }
+    
+    socklen_t len = sizeof(remote_addr);
     //for (;;) {
-        new_sckt_fd = accept(sckt_fd, (struct sockaddr *) &client_addr, &client_len);
+        request_fd = accept(listen_fd, (struct sockaddr *) &remote_addr, &len);
         
-        log_time();
-        fprintf (stderr, "NEW CONNECTION at %6d", new_sckt_fd);
+        log_time(log_fd);
+        fprintf (stderr, "NEW CONNECTION at %6d", request_fd);
 
-        // TODO -- create new thread with new_sckt_fd
-        // TODO -- create thread pool (array) of size MAX_CONNECTIONS
-        // TODO -- create bool array available_threads (stack?)
+        // TODO -- create bool array available_threads
         // TODO -- while accepting new connections, join thread 
-        
-        pthread_create(&p, NULL, do_stuff, (void *) new_sckt_fd) ;
-        pthread_join(p, NULL);
+        served = 0;
+        for (i = 0 ;  i<MAX_CONNECTIONS; i++) {
+            if ( (avail[i] == 1) && !served) {
+                t_data[i].sckt = request_fd;
+                t_data[i].remote = remote_addr;
+                avail[i] = 0;
+                served = 1;
+                pthread_create (&p[i], NULL, do_stuff, &t_data[i]);
+            }
+            if (avail[i] == 2) {
+                pthread_join(p[i], NULL);
+                avail[i] = 1;
+            }
+        }
     //}
-    close(new_sckt_fd);
-    close(sckt_fd);
+    
+    for (i = 0 ;  i<MAX_CONNECTIONS; i++)
+        pthread_join(p[i], NULL);
+
+    close(listen_fd);
     close(pid_fd);
     
-    log_time();
+    log_time(log_fd);
     fprintf (stderr, "CLOSING SERVER");
     close(log_fd);
 
@@ -73,38 +103,39 @@ static void catch_Z(int signo) {   // ctrl+z
 void s_init () {
     
     socklen_t size;
-    log_time ();
+    log_time (log_fd);
     fprintf (stderr, "STARTING SERVER ... ");
 
-    sckt_fd = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if ( sckt_fd < 0 )
- 	    error_and_exit ("ERROR: s_init() -- starting socket\n");
+    listen_fd = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if ( listen_fd < 0 )
+ 	    error_n_exit ("ERROR: s_init() -- starting socket\n");
     
-    bzero ((void *)&server_addr, sizeof(server_addr)); // init to zeroes
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(PORT_NUM);
+    bzero ((void *) &host_addr, sizeof(host_addr)); // init to zeroes
+    host_addr.sin_family = AF_INET;
+    host_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    host_addr.sin_port = htons(PORT_NUM);
     
-    reusePort (sckt_fd);
-    if ( bind(sckt_fd, (struct  sockaddr *) &server_addr, sizeof(server_addr)) )
-  	    error_and_exit("ERROR: s_init() -- binding socket\n");
+    reuse_port (listen_fd);
+    if ( bind(listen_fd, (struct  sockaddr *) &host_addr, sizeof(host_addr)) )
+  	    error_n_exit("ERROR: s_init() -- binding socket\n");
        
-    size = sizeof(server_addr);
-    if ( getsockname (sckt_fd, (struct sockaddr *) &server_addr, &size) ) 
-	    error_and_exit("ERROR: s_init() -- getting socket name\n");
+    size = sizeof(host_addr);
+    if ( getsockname (listen_fd, (struct sockaddr *) &host_addr, &size) ) 
+	    error_n_exit("ERROR: s_init() -- getting socket name\n");
     
-    fprintf(stderr, "at port: %d", ntohs(server_addr.sin_port));
-    listen ( sckt_fd, MAX_CONNECTIONS ); 
+    fprintf(stderr, "at port: %d", ntohs(host_addr.sin_port));
+    listen ( listen_fd, MAX_CONNECTIONS ); 
 }
 
 void d_init() {
     
+    int fd;
     pid_t pid;
     static FILE * log_file;
     //static FILE * pid_file ; 
 
     if ( (pid = fork()) < 0 ) 
-        error_and_exit("ERROR: d_init - cannot fork\n");
+        error_n_exit("ERROR: d_init - cannot fork\n");
     else if (pid) 
         exit(0);                        // PARENT EXITS - server to background
 
@@ -112,7 +143,7 @@ void d_init() {
         close(fd);                      // close any open fds
 
     if ( (fd = open("/dev/null", O_RDWR)) < 0) 
-        error_and_exit("ERROR: d_init - can't open /dev/null\n");
+        error_n_exit("ERROR: d_init - can't open /dev/null\n");
     dup2 (fd, STDIN_FILENO);            // redirect STDIN to /dev/null
     dup2 (fd, STDOUT_FILENO);           // redirect STDOUT to /dev/null
     close (fd);
@@ -123,9 +154,9 @@ void d_init() {
 
     /* TODO -- SIGCHLD & SIGPIPE
     if ( signal(SIGCHLD, sig_chld) < 0 ) 
-        error_and_exit("Signal SIGCHLD");
+        error_n_exit("Signal SIGCHLD");
     if ( signal(SIGPIPE, sig_pipe) < 0 ) 
-        error_and_exit("Signal SIGPIPE");
+        error_n_exit("Signal SIGPIPE");
      */
     
     pid = setsid();                     // put self in new process group 
@@ -193,29 +224,36 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
 }
 
 void * do_stuff (void * arg) {
+    
+    t_stuff * data = (t_stuff *) arg;
     char buffer[256];
-    int sckt = (int) arg;
-     
+    int sckt = data->sckt;
+    
     if ( write (sckt, "\n# ", 3) < 0) 
-        error_and_exit("ERROR writing to socket\n");
+        error_n_exit("ERROR writing to socket\n");
       
     bzero (buffer, 256);
     if (read (sckt, buffer, 255) < 0) 
-        error_and_exit("ERROR reading from socket\n");
-   
-    fprintf (stderr, "\n\tmessage: \'%s\'", buffer);
-    if ( write(sckt, "From server:msg received", 24) < 0) 
-        error_and_exit("ERROR writing to socket\n");  
+        error_n_exit("ERROR reading from socket\n");
     
+    log_time(data->log_fd);
+    fprintf (stderr, "message: \'%s\'", buffer); 
+    /* OR 
+    write (data->log_fd, "\n\tmessage: \'", 12);
+    write (data->log_fd, buffer, strlen(buffer));
+    write (data->log_fd, "\'", 1);*/
+    
+    avail[data->tid] = 2;
+    close (sckt);
     pthread_exit(NULL);
 }
 
-void error_and_exit(const char *msg) {
+void error_n_exit(const char *msg) {
     perror(msg);
     exit(1);
 }
 
-void log_time() {
+void log_time(int fd) { // TODO -- add fd param so threads can use it
     
     char out[20];
     time_t now;
@@ -225,12 +263,12 @@ void log_time() {
     now_tm = localtime(&now);
 
     strftime (out, 20, "\n%b %d %H:%M:%S ", now_tm);
-    write (log_fd, out, strlen(out));   // OR   fprintf (stderr, "%s", out);
+    write (fd, out, strlen(out));   // OR   fprintf (stderr, "%s", out);
 }
 
-void reusePort(int s){
+void reuse_port(int s ){
     int one=1;
-    if ( setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &one,sizeof(one)) == -1 )
-        error_and_exit("ERROR: setsockopt -- SO_REUSEPORT\n");
+    if ( setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(one)) == -1 )
+        error_n_exit("ERROR: setsockopt -- SO_REUSEPORT\n");
 } 
 
