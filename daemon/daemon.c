@@ -2,21 +2,10 @@
 
 int listen_fd, request_fd, pid_fd, log_fd;
 struct sockaddr_in host_addr, remote_addr;
-char buff[512];
-
-typedef struct thread_stuff { 
-    int tid;
-    int sckt;
-    int log_fd;
-    struct sockaddr_in remote;
-} t_stuff;
-
-pthread_t p[MAX_CONNECTIONS];
-t_stuff t_data[MAX_CONNECTIONS];
 static int avail[MAX_CONNECTIONS];
 
-
 int main () {
+    
     int i, served;
     
     d_init();   // daemon init
@@ -35,8 +24,6 @@ int main () {
         log_time(log_fd);
         fprintf (stderr, "NEW CONNECTION at %6d", request_fd);
 
-        // TODO -- create bool array available_threads
-        // TODO -- while accepting new connections, join thread 
         served = 0;
         for (i = 0 ;  i<MAX_CONNECTIONS; i++) {
             if ( (avail[i] == 1) && !served) {
@@ -77,7 +64,6 @@ static void catch_C (int signo) { // ctrl+c
         else {
             i->done = 1;
             kill(cgid, SIGINT);
-            fflush(stdout);
         }
     }
     fprintf(stdout, "\n");
@@ -93,8 +79,6 @@ static void catch_Z(int signo) {   // ctrl+z
         else {
             i->paused = 1;
             kill(cgid, SIGTSTP);
-            fflush(stdout);
-            tcsetpgrp (STDIN_FILENO, yash_pgid);
         }
     }
     fprintf(stdout, "\n");
@@ -132,7 +116,7 @@ void d_init() {
     int fd;
     pid_t pid;
     static FILE * log_file;
-    //static FILE * pid_file ; 
+    char buff[16];
 
     if ( (pid = fork()) < 0 ) 
         error_n_exit("ERROR: d_init - cannot fork\n");
@@ -173,10 +157,10 @@ void d_init() {
 
 void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here 
     
-    head_job = NULL;
+    //head_job = NULL;    // LL of jobs for accounting and signaling
 
     char line[LINE_MAX];
-    char * _tokens[LINE_MAX/3];
+    char * tokens[LINE_MAX/3];
     char * tmp;
 
     int pipe_pos, fwd_pos, bck_pos, count;
@@ -184,30 +168,30 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
     
     for(;;) {
     
-        job_notify();
+        //job_notify();
         fflush(stdout);
        
-        fprintf(stdout, "# ");
+        fprintf(stdout, "\n# ");
         fflush(stdout);
         skip = false;
 
         if ( fgets(line, LINE_MAX, stdin) == NULL ) { // catch ctrl+d (EOF) on empty line
             printf("\n");
-            kill_jobs();
+            //kill_jobs();
             return;
         }
 
         tmp =  strdup (line);
         count = 0;
 
-        skip = tokenizer (tmp, _tokens, &count);
-        if ( skip || (_tokens[0]==NULL) ) {
+        skip = tokenizer (tmp, tokens, &count);
+        if ( skip || (tokens[0]==NULL) ) {
             free (tmp);
             continue;
         }
 
         pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
-        skip = parser (_tokens, &pipe_pos, &fwd_pos, &bck_pos);
+        skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos);
         if (skip) {
             free (tmp);
             continue;
@@ -218,7 +202,7 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
             continue;
         }
 
-        executor (_tokens, pipe_pos, fwd_pos, bck_pos, count, line);
+        //executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line);
         free (tmp);
     }
 }
@@ -226,22 +210,32 @@ void shell_job () { // XXX -- THREAD JOB : not sure what should be mutex'd here
 void * do_stuff (void * arg) {
     
     t_stuff * data = (t_stuff *) arg;
-    char buffer[256];
-    int sckt = data->sckt;
     
+    int pipe_pos, fwd_pos, bck_pos, count;
+    char line[LINE_MAX];
+    char * tokens[LINE_MAX/3];
+    char * tmp;
+    
+    int sckt = data->sckt;
     if ( write (sckt, "\n# ", 3) < 0) 
         error_n_exit("ERROR writing to socket\n");
       
-    bzero (buffer, 256);
-    if (read (sckt, buffer, 255) < 0) 
+    bzero (line, LINE_MAX);
+    if (read (sckt, line, LINE_MAX) < 0) 
         error_n_exit("ERROR reading from socket\n");
     
+    tmp =  strdup (line);
+    count = 0;
+    tokenizer (tmp, tokens, &count);
+
+    pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
+    parser (tokens, &pipe_pos, &fwd_pos, &bck_pos); 
+    
     log_time(data->log_fd);
-    fprintf (stderr, "message: \'%s\'", buffer); 
-    /* OR 
-    write (data->log_fd, "\n\tmessage: \'", 12);
-    write (data->log_fd, buffer, strlen(buffer));
-    write (data->log_fd, "\'", 1);*/
+    fprintf (stderr, "message: \'%s\'", line); 
+    
+    data->head_job = NULL;
+    executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line, data->head_job);
     
     avail[data->tid] = 2;
     close (sckt);
@@ -253,7 +247,7 @@ void error_n_exit(const char *msg) {
     exit(1);
 }
 
-void log_time(int fd) { // TODO -- add fd param so threads can use it
+void log_time(int fd) { 
     
     char out[20];
     time_t now;

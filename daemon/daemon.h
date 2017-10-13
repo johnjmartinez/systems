@@ -15,7 +15,6 @@
 #include <time.h>
 #include <pthread.h>
 
-
 #define LINE_MAX 200
 #define	DELIM " \t\n\a\r"
 
@@ -26,18 +25,6 @@
 #define PID_FILE "/tmp/yashd.pid"
 #define PORT_NUM 3826
 #define MAX_CONNECTIONS 7
-
-// daemon.c
-
-void d_init();          // daemon 
-void s_init();          // socket/connection init
-void shell_job ();
-void * do_stuff (void * arg);
-void error_n_exit(const char *msg);
-void log_time(int fd);
-void reuse_port(int s);
-
-// for shell cmd stuff
 
 typedef struct job {
   struct job * next;    // next proc in pipe
@@ -50,12 +37,26 @@ typedef struct job {
   int in_bg;
 } job ;
 
-job * head_job;         // LL of jobs for accounting and signaling
+typedef struct thread_stuff { 
+    int tid;
+    int sckt;
+    int log_fd;
+    struct sockaddr_in remote;
+    job * head_job;
+} t_stuff;
 
-pid_t yash_pgid, cgid;  // current group id in fg
-int send_to_bg;         // in cmd line
-int fwd, bck;           // fwd = out = fd for >; bck = in = fd for <
-int pipfd[2];           // | in cmd line
+// daemon.c
+pthread_t p[MAX_CONNECTIONS];
+t_stuff t_data[MAX_CONNECTIONS];
+pid_t cgid;             // current group id in fg
+
+void d_init();          // daemon 
+void s_init();          // socket/connection init
+void shell_job ();
+void * do_stuff (void * arg);
+void error_n_exit(const char *msg);
+void log_time(int fd);
+void reuse_port(int s);
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
@@ -63,31 +64,27 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);
 
 // executor.c
-bool executor (char * cmds[], int pip, int out, int in, int count, char * line ); // waitpid
-
-void exec_one (char * cmd[], job * j );
-void exec_bck (char * cmd[], char * f_in, job * j );
-void exec_fwd (char * cmd[], char * f_out, job * j );
-void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j );
-void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j );
-void exec_pipe (char * cmd1[], char * cmd2[], job * j );
-void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j );
-void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j );
+bool executor (char * cmds[], int pip, int out, int in, int count, char * line, job * head ); // waitpid
+void exec_one (char * cmd[], job * j, int bg );
+void exec_bck (char * cmd[], char * f_in, job * j, int bg );
+void exec_fwd (char * cmd[], char * f_out, job * j, int bg );
+void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg );
+void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j, int bg );
+void exec_pipe (char * cmd1[], char * cmd2[], job * j, int bg );
+void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg );
+void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j, int bg );
 
 // jobatron.c
-job * new_job (char * line);
-
+job * new_job (char * line, job * head);
 char * get_status_str (job * j);
 int running_job (job * j); 
-
-job * find_bg_job ();
-job * find_fg_job ();
-job * find_job (pid_t pgid);
-
-void job_list() ;
-void job_list_all() ;
-void job_notify ();
-void kill_jobs ();
-void log_job (pid_t pgid, job * j); // waitpid
+job * find_bg_job (job * head);
+job * find_fg_job (job * head);
+job * find_job (pid_t pgid, job * head);
+void job_list(job * head) ;
+void job_list_all(job * head) ;
+void job_notify (job * head);
+void kill_jobs (job * head);
+void log_job (pid_t pgid, job * j, int bg); // waitpid
 void print_job_info (job * j, const char * status);
-void update_status ();
+void update_status (job * head);

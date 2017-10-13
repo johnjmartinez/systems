@@ -3,7 +3,7 @@
 // The following is heavily influenced by
 // https://www.gnu.org/software/libc/manual/html_node/Job-Control.html
 
-job * new_job (char * line) {
+job * new_job (char * line, job * head_job) {
 
         line[strlen(line)-1] = '\0';    // get rid of '\n'
         job * nj = (job *) malloc ( sizeof (job) );
@@ -20,7 +20,7 @@ job * new_job (char * line) {
         return nj;
 }
 
-void log_job (pid_t pgid, job * j) {
+void log_job (pid_t pgid, job * j, int send_to_bg) {
     int status, rc;
     j->cpgid = pgid;
 
@@ -39,11 +39,11 @@ void log_job (pid_t pgid, job * j) {
     }
 }
 
-void job_notify () {                    // recycle statuses before prompt
+void job_notify (job * head_job) {                    // recycle statuses before prompt
 
     job * j, * jprev, * jnext;
 
-    update_status ();                   // update status info for jobs
+    update_status (head_job);                   // update status info for jobs
 
     jprev = NULL;
     for (j = head_job; j; j = jnext) {
@@ -69,7 +69,7 @@ void job_notify () {                    // recycle statuses before prompt
     }
 }
 
-void update_status () {
+void update_status (job * head_job) {
 
     int status = -1;
     job * j;
@@ -100,9 +100,9 @@ void update_status () {
     }
 }
 
-void job_list() {                       // a.k.a. JOBS
-    job * j;
-    update_status ();                   // update status info for jobs
+void job_list (job * head_job) {    // a.k.a. JOBS
+    job * j;   
+    update_status (head_job);                           // update status info for jobs
 
     for (j = head_job; j; j = j->next) {
         if (j->in_bg) {
@@ -112,7 +112,7 @@ void job_list() {                       // a.k.a. JOBS
     }
 }
 
-void job_list_all() {                   // DEBUG - list everything in job table
+void job_list_all (job * head_job) {// DEBUG - list everything in job table
     job * j;
     fprintf(stdout, "DEBUG\n");
     for (j = head_job; j; j = j->next) {
@@ -136,7 +136,7 @@ int running_job (job * j) {             // 1 if job's running
     return 1;
 }
 
-void kill_jobs () {
+void kill_jobs (job * head_job) {
 
     job * target;
     job * curr = head_job;
@@ -152,7 +152,7 @@ void kill_jobs () {
     }
 }
 
-job * find_job (pid_t pgid) {           // find active job using pgid.
+job * find_job (pid_t pgid, job * head_job) {           // find active job using pgid.
 
   job * j;
   for (j = head_job; j; j = j->next)
@@ -161,7 +161,7 @@ job * find_job (pid_t pgid) {           // find active job using pgid.
   return NULL;
 }
 
-job * find_fg_job () {                  // find newest job->paused/in_bg
+job * find_fg_job (job * head_job) {                  // find newest job->paused/in_bg
 
     job * j;
     for (j = head_job; j; j = j->next)
@@ -170,7 +170,7 @@ job * find_fg_job () {                  // find newest job->paused/in_bg
     return NULL;
 }
 
-job * find_bg_job () {                  // find newest job->paused
+job * find_bg_job (job * head_job) {                  // find newest job->paused
 
     job * j;
     for (j = head_job; j; j = j->next)

@@ -8,7 +8,7 @@
     void reusePort(int s) {
         int one=1;
         if ( setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(one)) == -1 ) {
-	        printf("error in setsockopt,SO_REUSEPORT \n");
+	        printf("error in setsockopt, SO_REUSEPORT \n");
 	        exit(-1);
 	    }
     }    
