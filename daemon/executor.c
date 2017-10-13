@@ -1,7 +1,7 @@
 #include "daemon.h"
 
-int cid1, cid2;
-
+int cid1, cid2; // TODO -- move to every exec_*()
+// TODO -- change job to t_stuff
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line, job * head ) {
 
     int rc, status; 
@@ -88,7 +88,7 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
     }
     return false;
 }
-
+// TODO -- add dup2(sockfd, STDOUT_FILENO) to all execs
 void exec_one (char * cmd[], job * j, int bg) {
 
     if ( (cid1=fork ()) < 0 ) 
