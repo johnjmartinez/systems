@@ -39,23 +39,25 @@ typedef struct job {
 
 typedef struct thread_stuff { 
     int tid;
-    int sckt;
-    int log_fd;
-    struct sockaddr_in remote;
-    job * head_job;
+    pid_t cgid;         // current group id in 'fg'
+    int s_fd;           // socket fd
+    int port;           
+    char * ip_addr;
+    job * head_job;     
 } t_stuff;
 
-// daemon.c
 pthread_t p[MAX_CONNECTIONS];
 t_stuff t_data[MAX_CONNECTIONS];
-pid_t cgid;             // current group id in fg
+pthread_mutex_t LOCK;
+int LOG_FD;
 
+// daemon.c             // main()
 void d_init();          // daemon 
 void s_init();          // socket/connection init
-void shell_job ();
-void * do_stuff (void * arg);
+void * shell_job (void * arg);
 void error_n_exit(const char *msg);
-void log_time(int fd);
+void log_thread(char * line, t_stuff * data);
+void log_time();        // not thread safe: for server start and end
 void reuse_port(int s);
 
 // tokenizer.c
@@ -65,14 +67,15 @@ bool valid (int pip, int out, int in);
 
 // executor.c
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line, t_stuff * data ); // waitpid
-void exec_one (char * cmd[], job * j, int bg );
-void exec_bck (char * cmd[], char * f_in, job * j, int bg );
-void exec_fwd (char * cmd[], char * f_out, job * j, int bg );
-void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg );
-void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j, int bg );
-void exec_pipe (char * cmd1[], char * cmd2[], job * j, int bg );
-void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg );
-void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j, int bg );
+void exec_one (char * cmd[], job * j, int bg, t_stuff * data );
+void exec_bck (char * cmd[], char * f_in, job * j, int bg, t_stuff * data );
+void exec_fwd (char * cmd[], char * f_out, job * j, int bg, t_stuff * data );
+void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg, t_stuff * data );
+void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j, int bg, t_stuff * data );
+void exec_pipe (char * cmd1[], char * cmd2[], job * j, int bg, t_stuff * data );
+void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg, t_stuff * data );
+void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, job * j, 
+        int bg, t_stuff * data );
 
 // jobatron.c
 job * new_job (char * line, job * head);
