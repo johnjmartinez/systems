@@ -14,7 +14,7 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
     
 yash: client.o
-	$(CC) -o yash client.o
+	$(CC) -o yash client.o $(LDFLAGS)
         
 clean:
 	rm *.o yash yashd

@@ -18,6 +18,7 @@ static void catch_Z(int signo) { // ctrl+z
     send (sckt_fd, "CTL z \n", 7, 0);
 }
 
+
 int main (int argc, char* argv[]) {
     
     if (argc < 2) {
@@ -32,7 +33,7 @@ int main (int argc, char* argv[]) {
     char * _tokens[LINE_MAX / 3];
     char * tmp;
 
-    int skip, num;
+    int skip;
     struct sockaddr_in server;
     struct hostent * target;
        
@@ -43,26 +44,13 @@ int main (int argc, char* argv[]) {
     bcopy ( target->h_addr, &server.sin_addr.s_addr, target->h_length );
     if ( connect ( sckt_fd, (struct  sockaddr *) &server, sizeof(server) ) < 0)
         error_n_exit ("ERROR connecting");
+    
     // TODO -- Handle SIGPIPE from server going down?
-
-    for(;;) {
+    pthread_create (&recv_t, NULL, listen_n_display, NULL);
+    connection_error = false;
+    while (!connection_error) {
         fflush(stdout);
         skip = false;
-
-        // TODO -- figure out a way to check if receiving/writing constantly
-        // TODO -- fix receives for rand len strs
-        num = read (sckt_fd, buf, sizeof(buf));
-        if (num < 0)
-            error_n_exit ("ERROR: receiving stream msg");
-            
-        if (num) {
-            buf[num]='\0';
-            printf("%s", buf);
-        }
-        else {    
-            printf("Disconnected? ...");
-            break;
-        } 
 
         if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
             break;
@@ -81,11 +69,12 @@ int main (int argc, char* argv[]) {
             free(tmp);
             continue;
         }
-
+        
         write (sckt_fd, line, strlen(line));
         free(tmp);
     }
-        
+    
+    pthread_join(recv_t, NULL);    
     close (sckt_fd);
     printf("\n");
     return (EXIT_SUCCESS);
@@ -120,6 +109,30 @@ int parser (char * _tokens[]) {
     
     printf(" -ERROR: INVALID COMMAND\n");
     return 1; 
+}
+
+void * listen_n_display (void * arg) { 
+    
+    int num;
+    char buf[4096];
+    
+    for (;;) {
+        num = read (sckt_fd, buf, sizeof(buf));
+        if (num < 0) {
+            perror("ERROR: receiving stream msg");
+            break;
+        }
+        else if (num) {
+            buf[num]='\0';
+            printf("%s", buf);
+        }
+        else {    
+            perror("Disconnected? ...");
+            break;
+        }
+    }
+    connection_error = true;
+    pthread_exit(NULL);
 }
 
 void error_n_exit (const char *msg) {

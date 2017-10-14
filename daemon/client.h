@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <pthread.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -16,9 +16,10 @@
 #define PORT_NUM 3826
 
 int sckt_fd;
-char buffer;
-char buf[256];
+bool connection_error;
+pthread_t recv_t;
 
 bool tokenizer (char * line, char * _tokens[]);
 int parser (char * _tokens[]);
+void * listen_n_display (void * arg) ;
 void error_n_exit (const char *msg);

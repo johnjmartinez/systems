@@ -3,6 +3,7 @@
 int listen_fd, request_fd, pid_fd;
 struct sockaddr_in host_addr, remote_addr;
 static int avail[MAX_CONNECTIONS];
+pthread_mutex_t LOCK = PTHREAD_MUTEX_INITIALIZER; // OR pthread_mutex_init(&LOCK, NULL); ?
 
 int main () {
     
@@ -26,9 +27,9 @@ int main () {
         if ( getsockname (request_fd, (struct sockaddr *) &remote_addr, &len) < 0 )
             error_n_exit("ERROR getsockname from socket\n");
 
-        log_time();
+        /*log_time();
         fprintf (stderr, "NEW CONNECTION\t%s:%d", inet_ntoa(remote_addr.sin_addr), 
-            ntohs(remote_addr.sin_port) );
+            ntohs(remote_addr.sin_port) );*/
 
         served = 0;
         for (i = 0 ; i<MAX_CONNECTIONS; i++) {
@@ -174,17 +175,19 @@ void * shell_job (void * arg) {
     char * tokens[LINE_MAX/3];
     char * tmp;
     int pipe_pos, fwd_pos, bck_pos, count;
+    
     bool skip;
     
+    // TODO -- add quit to break out of loop if CTL+d is  recvd
     for(;;) {
         job_notify (data->head_job);
         if ( write (sckt_fd, "\n# ", 3) < 0) 
-            error_n_exit("ERROR writing to socket\n");
+            error_n_exit("ERROR writing to socket");
         
         skip = false;
         bzero (line, LINE_MAX);
         if (read (sckt_fd, line, LINE_MAX) < 0) 
-            error_n_exit("ERROR reading from socket\n");
+            error_n_exit("ERROR reading from socket");
 
         tmp =  strdup (line);
         count = 0;
@@ -194,7 +197,7 @@ void * shell_job (void * arg) {
         //    continue;
         //}
         
-        // TODO -- check CTL cmds and create handlers
+        // TODO -- check CTL cmds and create handlers (CTL+d = quit)
         pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
         skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos); 
         if (skip) {
@@ -224,8 +227,7 @@ void error_n_exit(const char *msg) {
 
 void log_thread(char * line, t_stuff * data) { 
     // log template:
-    // "<date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>"
-    
+    // <date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>
     char out[20];
     
     time_t now;

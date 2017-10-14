@@ -48,17 +48,16 @@ typedef struct thread_stuff {
 
 pthread_t p[MAX_CONNECTIONS];
 t_stuff t_data[MAX_CONNECTIONS];
-pthread_mutex_t LOCK;
 int LOG_FD;
 
 // daemon.c             // main()
 void d_init();          // daemon 
 void s_init();          // socket/connection init
 void * shell_job (void * arg);
-void error_n_exit(const char *msg);
 void log_thread(char * line, t_stuff * data);
 void log_time();        // not thread safe: for server start and end
 void reuse_port(int s);
+void error_n_exit(const char *msg);
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count);
