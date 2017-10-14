@@ -7,7 +7,7 @@
         ctrl+d (EOF) or 'quit'
     signal handling:
         ctrl+c will send "CTL c\n" (stop cmd on server)
-        ctrl+x will send "CTL z\n" (suspend cmd on server)
+        ctrl+z will send "CTL z\n" (suspend cmd on server)
 */
 
 static void catch_C(int signo) { // ctrl+c
@@ -45,11 +45,12 @@ int main (int argc, char* argv[]) {
         error_n_exit ("ERROR connecting");
     // TODO -- Handle SIGPIPE from server going down?
 
-    //for(;;) {
+    for(;;) {
         fflush(stdout);
         skip = false;
 
-        // TODO -- get command prompt from server
+        // TODO -- figure out a way to check if receiving/writing constantly
+        // TODO -- fix receives for rand len strs
         num = read (sckt_fd, buf, sizeof(buf));
         if (num < 0)
             error_n_exit ("ERROR: receiving stream msg");
@@ -58,34 +59,33 @@ int main (int argc, char* argv[]) {
             buf[num]='\0';
             printf("%s", buf);
         }
-        
         else {    
             printf("Disconnected? ...");
-            //break;
+            break;
         } 
 
-        if (fgets(line, LINE_MAX, stdin) == NULL);  // catch ctrl+d (EOF) on empty line
-            //break;
+        if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
+            break;
         
         tmp = strdup (line);
         skip = tokenizer (tmp, _tokens);
-        /*if (skip || (_tokens[0] == NULL)) {
+        if (skip || (_tokens[0] == NULL)) {
             free(tmp);
             continue;
-        }*/
+        }
 
         skip = parser (_tokens);
-        /*if (skip) {
+        if (skip) {
             if (skip > 1)  // QUIT
                 break;
             free(tmp);
             continue;
-        }*/
+        }
 
         write (sckt_fd, line, strlen(line));
         free(tmp);
-    //}
-    
+    }
+        
     close (sckt_fd);
     printf("\n");
     return (EXIT_SUCCESS);

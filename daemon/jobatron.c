@@ -25,7 +25,7 @@ void log_job (pid_t pgid, job * j, int send_to_bg) {
     j->cpgid = pgid;
 
     if (!send_to_bg ) {                 // foreground
-        cgid = pgid;
+        j->cpgid = pgid;
         rc =  waitpid (j->cpgid, &status, WUNTRACED ) ;
         if (rc > 0)
             j->status = status;
@@ -129,7 +129,6 @@ char * get_status_str (job * j) {
     return ("LostWTF");
 }
 
-
 int running_job (job * j) {             // 1 if job's running
 
     if (!j->done && !j->paused) return 0;
@@ -179,6 +178,7 @@ job * find_bg_job (job * head_job) {                  // find newest job->paused
     return NULL;
 }
 
+// TODO -- change to sckt fd
 void print_job_info (job * j, const char * status) {
     fprintf(stdout, "[%d] -  %s\t%s\n", j->cpgid, status, j->line);
 }
