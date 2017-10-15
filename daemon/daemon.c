@@ -22,10 +22,10 @@ int main () {
         request_fd = accept(listen_fd, (struct sockaddr *) &remote_addr, &len);
         
         if ( getpeername (request_fd, (struct sockaddr *) &remote_addr, &len) < 0 )
-            error_n_exit("ERROR getpeername from socket\n");
+            error_n_exit("ERROR getpeername from socket");
         
         if ( getsockname (request_fd, (struct sockaddr *) &remote_addr, &len) < 0 )
-            error_n_exit("ERROR getsockname from socket\n");
+            error_n_exit("ERROR getsockname from socket");
 
         /*log_time();
         fprintf (stderr, "NEW CONNECTION\t%s:%d", inet_ntoa(remote_addr.sin_addr), 
@@ -99,7 +99,7 @@ void s_init () {
 
     listen_fd = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if ( listen_fd < 0 )
- 	    error_n_exit ("ERROR: s_init() -- starting socket\n");
+ 	    error_n_exit ("ERROR: s_init() -- starting socket");
     
     bzero ((void *) &host_addr, sizeof(host_addr)); // init to zeroes
     host_addr.sin_family = AF_INET;
@@ -108,11 +108,11 @@ void s_init () {
     
     reuse_port (listen_fd);
     if ( bind(listen_fd, (struct  sockaddr *) &host_addr, sizeof(host_addr)) )
-  	    error_n_exit("ERROR: s_init() -- binding socket\n");
+  	    error_n_exit("ERROR: s_init() -- binding socket");
        
     size = sizeof(host_addr);
     if ( getsockname (listen_fd, (struct sockaddr *) &host_addr, &size) ) 
-	    error_n_exit("ERROR: s_init() -- getting socket name\n");
+	    error_n_exit("ERROR: s_init() -- getting socket name");
     
     fprintf(stderr, "at port: %d", ntohs(host_addr.sin_port));
     listen ( listen_fd, MAX_CONNECTIONS ); 
@@ -134,7 +134,7 @@ void d_init() {
         close(fd);                      // close any open fds
 
     if ( (fd = open("/dev/null", O_RDWR)) < 0) 
-        error_n_exit("ERROR: d_init - can't open /dev/null\n");
+        error_n_exit("ERROR: d_init - can't open /dev/null");
     
     dup2 (fd, STDIN_FILENO);            // redirect STDIN  to /dev/null
     dup2 (fd, STDOUT_FILENO);           // redirect STDOUT to /dev/null
@@ -178,7 +178,7 @@ void * shell_job (void * arg) {
     
     bool skip;
     
-    // TODO -- add quit to break out of loop if CTL+d is  recvd
+    // TODO -- add quit to break out of loop if CTL+d is recvd
     for(;;) {
         job_notify (data->head_job);
         if ( write (sckt_fd, "\n# ", 3) < 0) 
