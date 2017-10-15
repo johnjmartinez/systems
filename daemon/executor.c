@@ -47,11 +47,11 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                 // CD -- chdir ()
         if ( count==2 ) {                                       // TODO -- update env $*WD
             if (chdir (cmds[1]) != 0)                          
-                perror ("yash");
+                 write (sckt, "ERROR: cd", 9);
         }
         else if ( count==1 ) {
             if (chdir(getenv ("HOME")) != 0)
-                perror ("yash");
+                write (sckt, "ERROR: cd", 9);
         }
     }
     else {                                                      // ACTUAL COMMAND 
@@ -92,7 +92,7 @@ void exec_one (char * cmd[], job * j, int bg, t_stuff * t) {
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork failed");
     else if (!cid1) {                                           // CHILD
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)  
 			error_n_exit ("ERROR: setpgid failed");
@@ -113,7 +113,7 @@ void exec_fwd (char * cmd[], char * f_out, job * j, int bg, t_stuff * t) {
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork failed");
     else if (!cid1) {                                           // CHILD
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)
   			error_n_exit ("ERROR: setpgid failed");
@@ -124,7 +124,6 @@ void exec_fwd (char * cmd[], char * f_out, job * j, int bg, t_stuff * t) {
         dup2 (fwd, 1);
         close (fwd);
         
-        dup2(t->s_fd, STDOUT_FILENO);
         dup2(t->s_fd, STDERR_FILENO);
         execvp (cmd[0], cmd);
         perror ("ERROR"); _exit(1);
@@ -140,7 +139,7 @@ void exec_bck (char * cmd[], char * f_in, job * j, int bg, t_stuff * t) {
     if ( (cid1=fork ()) < 0 )  
         perror ("ERROR: fork failed");
     else if (!cid1) {                                           // CHILD
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)  			
             error_n_exit ("ERROR: setpgid failed");
@@ -167,7 +166,7 @@ void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg, t_st
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork failed");
     else if (!cid1) {                                           // CHILD
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)
   			error_n_exit ("ERROR: setpgid failed");
@@ -180,7 +179,6 @@ void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg, t_st
         dup2 (fwd, 1); close (fwd);
         dup2 (bck, 0); close (bck);
 
-        dup2(t->s_fd, STDOUT_FILENO);
         dup2(t->s_fd, STDERR_FILENO);
         execvp (cmd[0], cmd);
         perror ("ERROR"); _exit(1);
@@ -236,7 +234,7 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg,
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork1 failed");
     else if (!cid1) {                                           // CHILD_1
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)
  			error_n_exit ("ERROR: setpgid failed");
@@ -261,7 +259,6 @@ void exec_pipe_out (char * cmd1[], char * cmd2[], char * f_out, job * j, int bg,
             close (0);
             dup2 (pipfd[0], 0);
 
-            dup2(t->s_fd, STDOUT_FILENO);
             dup2(t->s_fd, STDERR_FILENO);
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);
@@ -284,7 +281,7 @@ void exec_in_pipe (char * cmd1[], char * cmd2[], char * f_in, job * j, int bg, t
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork1 failed");
     else if (!cid1) {                                           // CHILD_1
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)
   			error_n_exit ("ERROR: setpgid failed");
@@ -333,7 +330,7 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork1 failed");
     else if (!cid1) {                                           // CHILD_1
-        //setsid();
+        
 		t->cgid = getpid ();
 		if (setpgid (t->cgid, t->cgid) < 0)
   			error_n_exit ("ERROR: setpgid failed");
@@ -363,7 +360,6 @@ void exec_in_pipe_out (char * cmd1[], char * cmd2[], char * f_in, char * f_out, 
             close (0);
             dup2 (pipfd[0], 0);
         
-            dup2(t->s_fd, STDOUT_FILENO);
             dup2(t->s_fd, STDERR_FILENO);
             execvp (cmd2[0], cmd2);
             perror ("ERROR_2"); _exit(1);

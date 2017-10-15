@@ -63,8 +63,8 @@ void catch_z(t_stuff * data);         // CTL z
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count, int sckt);
-bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
-bool valid (int pip, int out, int in);
+bool parser (char * _tokens[], int * pip, int * fwd, int * bck, int sckt );
+bool valid (int pip, int out, int in, int sckt);
 
 // executor.c
 bool executor (char * cmds[], int pip, int out, int in, int count, char * line, t_stuff * data ); // waitpid

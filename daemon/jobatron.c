@@ -26,7 +26,7 @@ void log_job (pid_t pgid, job * j, int send_to_bg) {
 
     if (!send_to_bg ) {                 // foreground
         j->cpgid = pgid;
-        rc =  waitpid (j->cpgid, &status, WUNTRACED ) ;
+        rc =  waitpid (j->cpgid, &status, WUNTRACED | WNOHANG ) ;
         if (rc > 0)
             j->status = status;
         // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);

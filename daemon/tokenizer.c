@@ -20,49 +20,58 @@ bool tokenizer (char * line, char * _tokens[], int * count, int sckt) {
     return false;
 }
 
-bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {    
+bool parser (char * _tokens[], int * pip, int * fwd, int * bck, int sckt ) {    
+    char * err;
     
     for( int i = 0; _tokens[i] != NULL; i++ )  {
 
         if ( strncmp(_tokens[i], "&", 1) == 0 ) {   // & !wait for completion
             if ( !i || _tokens[i+1] != NULL ) {
-                printf("ERROR: \'&\' can only be used as last char, following a cmd\n");
+                err = "ERROR: \'&\' can only be used as last char, following a cmd\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             else if (*pip) {
-                printf("ERROR: \'|\' and \'&\' not allowed in command line\n");
+                err = "ERROR: \'|\' and \'&\' not allowed in command line\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
         }
         else if ( strncmp(_tokens[i], "<", 1) == 0 ) {  // BCK STDIN <
             if (*bck) {
-                printf("ERROR: only one \'<\' allowed\n");
+                err = "ERROR: only one \'<\' allowed\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             else if ( !i || (_tokens[i+1] == NULL) ) {
-                printf("ERROR: \'<\' can only be used as: \'(cmd) < (file)\'\n");
+                err = "ERROR: \'<\' can only be used as: \'(cmd) < (file)\'\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             *bck = i; 
         }
         else if ( strncmp(_tokens[i], ">", 1) == 0 ) {  // FWD STDOUT >
             if (*fwd) {
-                printf("ERROR: only one \'>\' allowed\n");
+                err = "ERROR: only one \'>\' allowed\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             else if ( !i || (_tokens[i+1] == NULL) ) {
-                printf("ERROR: \'>\' can only be used as: \'(cmd) > (file)\'\n");
+                err = "ERROR: \'>\' can only be used as: \'(cmd) > (file)\'\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             *fwd = i; 
         }
         else if ( strncmp(_tokens[i], "|", 1) == 0 ) {  // PIPE STDOUT | STDIN
             if (*pip) {
-                printf("ERROR: only one \'|\' allowed\n");
+                err = "ERROR: only one \'|\' allowed\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             else if ( !i || (_tokens[i+1] == NULL) ) {
-                printf("ERROR: \'|\' can only be used as: \'(cmd) | (cmd)\'\n");
+                err = "ERROR: \'|\' can only be used as: \'(cmd) | (cmd)\'\n";
+                write(sckt, err, strlen(err));
                 return true;
             }
             *pip = i;
@@ -71,13 +80,17 @@ bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
     return false;
 }
 
-bool valid (int pip, int out, int in) {                 // CONSTRAINT CHECKING
+bool valid (int pip, int out, int in, int sckt) {       // CONSTRAINT CHECKING
+    char * err;
+    
     if ( (pip < in) && pip ) {
-        printf("ERROR: invalid job: \'|\' followed by \'<\'\n");
+        err = "ERROR: invalid job: \'|\' followed by \'<\'\n";
+        write(sckt, err, strlen(err));
         return false;
     }
     else if ( (out < pip) && out ) {
-        printf("ERROR: invalid job: \'>\' followed by \'|\'\n");
+        err = "ERROR: invalid job: \'>\' followed by \'|\'\n";
+        write(sckt, err, strlen(err));
         return false;
     }
     return true;

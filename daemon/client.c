@@ -18,19 +18,25 @@ static void catch_Z(int signo) { // ctrl+z
     send (sckt_fd, "CTL z \n", 7, 0);
 }
 
+static void catch_PIPE(int signo) { // ctrl+z
+    pthread_join(recv_t, NULL);   
+    exit(1);
+}
 
 int main (int argc, char* argv[]) {
     
-    setvbuf(stdout, NULL, _IONBF, 0);
+    //setvbuf(stdout, NULL, _IONBF, 0);
+    signal(SIGPIPE, SIG_IGN);
 
     if (argc < 2) {
-       fprintf(stderr,"Usage: %s hostname\n", argv[0]);
+       fprintf(stderr,"Usage: %s <hostname>\n", argv[0]);
        exit(0);
     }
     
     if (signal(SIGINT, catch_C) == SIG_ERR) printf("signal(SIGINT) error");
     if (signal(SIGTSTP, catch_Z) == SIG_ERR) printf("signal(SIGTSTP) error");
-    
+    if (signal(SIGPIPE, catch_PIPE) == SIG_ERR) printf("signal(SIGPIPE) error");
+
     char line[LINE_MAX];
     char * _tokens[LINE_MAX / 3];
     char * tmp;
@@ -49,9 +55,8 @@ int main (int argc, char* argv[]) {
     
     // TODO -- Handle SIGPIPE from server going down?
     pthread_create (&recv_t, NULL, listen_n_display, NULL);
-    
     connection_error = false;
-    while (!connection_error) {
+    do {
         
         skip = false;
         if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
@@ -66,21 +71,24 @@ int main (int argc, char* argv[]) {
 
         skip = parser (_tokens);
         if (skip) {
-            if (skip > 1)  // QUIT
+            if (skip > 1) {  // QUIT
+                // /*DEBUG */ printf("\nskip:%d\n",skip );
                 break;
+            }
             free(tmp);
             continue;
         }
         
         write (sckt_fd, line, strlen(line));
         free(tmp);
-    }
+
+    } while (!connection_error);
     
-    pthread_join(recv_t, NULL);    
-    close (sckt_fd);
+    close (sckt_fd);    
     printf("\n");
     return (EXIT_SUCCESS);
 }
+
 
 bool tokenizer (char * line, char * _tokens[]) {
 
@@ -109,28 +117,30 @@ int parser (char * _tokens[]) {
     else if (strncmp(_tokens[0], "quit", 4) == 0) 
         return 2; // TODO -- check only token: _tokens[1] == NULL ? 
     
-    printf(" ERROR: INVALID COMMAND\n# ");
+    printf("-- invalid command\n# ");
     return 1; 
 }
 
-void * listen_n_display (void * arg) { 
+void * listen_n_display (void * arg) { // THREAD
     
     int num;
     char buf[4096];
     
     for (;;) {
-
-        num = read (sckt_fd, buf, sizeof(buf));
-        if (num < 0) {
+        bzero(buf, 4096);
+        if ( (num = read (sckt_fd, buf, sizeof(buf))) < 0 ) {
             perror("ERROR: receiving stream msg");
             break;
         }
         else if (num) {
+            fflush(stdout);
             buf[num]='\0';
             printf("%s", buf);
+            fflush(stdout);
         }
         else {    
-            perror("ERROR: read nothing from sckt");
+            printf("ERROR: Disconnected");
+            close (sckt_fd);
             break;
         }
     }
@@ -140,5 +150,5 @@ void * listen_n_display (void * arg) {
 
 void error_n_exit (const char *msg) {
     perror (msg);
-    exit(0);
+    _exit(0);
 }

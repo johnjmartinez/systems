@@ -8,7 +8,8 @@ pthread_mutex_t LOCK = PTHREAD_MUTEX_INITIALIZER; // OR pthread_mutex_init(&LOCK
 int main () {
     
     int i, served;
-    
+    signal(SIGPIPE, SIG_IGN);
+
     d_init();   // daemon init
     s_init();   // socket init: socket(), bind(), listen()
 
@@ -149,15 +150,21 @@ void * shell_job (void * arg) {
     int pipe_pos, fwd_pos, bck_pos, count;
     bool skip;
     
+    log_thread("STARTING CONNECTION ", data);
     for(;;) {
+        
         job_notify (data->head_job, data->s_fd);
-        if ( write (sckt_fd, "\n# ", 3) < 0) 
-            error_n_exit("ERROR writing to socket");
+        if ( write (sckt_fd, "\n# ", 3) < 0) {
+            perror("ERROR writing to socket");
+            break;
+        }
         
         skip = false;
         bzero (line, LINE_MAX);
-        if (read (sckt_fd, line, LINE_MAX) < 0) 
-            error_n_exit("ERROR reading from socket");
+        if (read (sckt_fd, line, LINE_MAX) < 0) {
+            perror("ERROR reading from socket");
+            break;
+        }
         
         count = 0;
         log_thread(line, data);
@@ -166,7 +173,6 @@ void * shell_job (void * arg) {
         skip = tokenizer (tmp, tokens, &count, sckt_fd);
         if ( skip || (tokens[0]==NULL) ) {
             free (tmp);
-            log_thread(line, data);
             continue;
         }
 /*
@@ -180,29 +186,22 @@ void * shell_job (void * arg) {
             if (strncmp(tokens[1], "quit", 1) == 0)
                 break;
             
-            for (int x=1; x < count; x++)
-                tokens[x] = tokens[x-1];
+            for (int x=1; x <= count; x++)
+                tokens[x-1] = tokens[x];
             
             pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
-            skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos); 
+            skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos, sckt_fd); 
             if (skip) {
                 free (tmp);
-                log_thread(line, data);
                 continue;
             }
 
-            if (!valid (pipe_pos, fwd_pos, bck_pos)) {
+            if (!valid (pipe_pos, fwd_pos, bck_pos, sckt_fd)) {
                 free (tmp);
-                log_thread(line, data);
                 continue;
             }
-            
-            // DEBUG
-            log_time();
-            fprintf(stderr, "RECEIVED AT\t%s:%d:%d\t%s %s", data->ip_addr, data->port, data->s_fd,
-                tmp, tokens[0]);       
         
-            executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line, data);
+            executor (tokens, pipe_pos, fwd_pos, bck_pos, count-1, line, data);
         }
         else if (strncmp(tokens[0], "CTL", 3) == 0) {
             
@@ -215,10 +214,12 @@ void * shell_job (void * arg) {
         }
         
         free (tmp);
+        sleep(1);
     }
-
-    avail[data->tid] = 2;
+    log_thread("CLOSING CONNECTION ", data);
+        
     close (sckt_fd);
+    avail[data->tid] = 2;
     pthread_exit(NULL);
 }
 
@@ -235,7 +236,6 @@ void catch_c (t_stuff * data) { // CTL c
             kill(data->cgid, SIGINT);
         }
     }
-    write (data->s_fd, "\n# ", 3);
 }
 
 // ONLY APPLY TO FG (running) JOBS  -- hence using cgid
@@ -251,7 +251,6 @@ void catch_z (t_stuff * data) {   // CTL z
             kill(data->cgid, SIGTSTP);
         }
     }
-    write (data->s_fd, "\n# ", 3);
 }
 
 void error_n_exit(const char *msg) {
@@ -276,7 +275,7 @@ void log_thread(char * line, t_stuff * data) {
     pthread_mutex_lock(&LOCK);
     write (LOG_FD, time_out, strlen(time_out));   
     write (LOG_FD, str_out, strlen(str_out));   
-    write (LOG_FD, line, strlen(line)-1);   
+    write (LOG_FD, line, strlen(line)-1);   // get rid of line last char ... usually \n
     pthread_mutex_unlock(&LOCK);
 
 }
