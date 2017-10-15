@@ -4,6 +4,7 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
 
     int rc, status, to_bg;                                      // in cmd line
     job * head = data->head_job;
+    int sckt = data->s_fd;
 
     to_bg = (strncmp (cmds[count-1],"&",1) == 0);
     if (to_bg) cmds[count-1] = NULL;
@@ -40,8 +41,8 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
             i->status = status;  
     }
     else if ( (strncmp (cmds[0],"jobs",4)==0) ) {               // JOBS
-         if (count==1) job_list (head);
-         else job_list_all (head);
+         if (count==1) job_list (head, sckt);
+         else job_list_all (head, sckt);
     }    
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                 // CD -- chdir ()
         if ( count==2 ) {                                       // TODO -- update env $*WD

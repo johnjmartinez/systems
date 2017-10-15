@@ -26,12 +26,12 @@ int main () {
         
         if ( getsockname (request_fd, (struct sockaddr *) &remote_addr, &len) < 0 )
             error_n_exit("ERROR getsockname from socket");
-
-        /* DEBUG */
-        //log_time();
-        //fprintf (stderr, "NEW CONNECTION\t%s:%d:%d", inet_ntoa(remote_addr.sin_addr), 
-        //    ntohs(remote_addr.sin_port), request_fd );
-
+/*
+        // DEBUG 
+        log_time();
+        fprintf (stderr, "NEW CONNECTION\t%s:%d:%d", inet_ntoa(remote_addr.sin_addr), 
+            ntohs(remote_addr.sin_port), request_fd );
+*/
         served = 0;
         for (i = 0 ; i<MAX_CONNECTIONS; i++) {
             if ( (avail[i] == 1) && !served) {
@@ -133,7 +133,7 @@ void d_init() {
         exit(1);
     if (lockf(pid_fd, F_TLOCK, 0) != 0) 
         exit(0);
-    sprintf (buff, "%d\n", pid);
+    snprintf (buff, 16, "%d\n", pid);
     write (pid_fd, buff, strlen(buff));
 }
 
@@ -150,7 +150,7 @@ void * shell_job (void * arg) {
     bool skip;
     
     for(;;) {
-        job_notify (data->head_job);
+        job_notify (data->head_job, data->s_fd);
         if ( write (sckt_fd, "\n# ", 3) < 0) 
             error_n_exit("ERROR writing to socket");
         
@@ -169,19 +169,22 @@ void * shell_job (void * arg) {
             log_thread(line, data);
             continue;
         }
-        
-        /* DEBUG */
+/*
+        // DEBUG
         log_time();
         fprintf(stderr, "RECEIVED AT\t%s:%d:%d\t%s %s", data->ip_addr, data->port, data->s_fd,
                 tmp, tokens[0]);
-        
+*/
         if (strncmp(tokens[0], "CMD", 3) == 0 ) {  
              
             if (strncmp(tokens[1], "quit", 1) == 0)
                 break;
             
+            for (int x=1; x < count; x++)
+                tokens[x] = tokens[x-1];
+            
             pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
-            skip = parser (&tokens[1], &pipe_pos, &fwd_pos, &bck_pos); 
+            skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos); 
             if (skip) {
                 free (tmp);
                 log_thread(line, data);
@@ -194,7 +197,12 @@ void * shell_job (void * arg) {
                 continue;
             }
             
-            executor (&tokens[1], pipe_pos, fwd_pos, bck_pos, count, line, data);
+            // DEBUG
+            log_time();
+            fprintf(stderr, "RECEIVED AT\t%s:%d:%d\t%s %s", data->ip_addr, data->port, data->s_fd,
+                tmp, tokens[0]);       
+        
+            executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line, data);
         }
         else if (strncmp(tokens[0], "CTL", 3) == 0) {
             
@@ -254,17 +262,20 @@ void error_n_exit(const char *msg) {
 void log_thread(char * line, t_stuff * data) { 
     // log template:
     // <date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>
-    char out[20];
+    char time_out[20];
+    char str_out[50];
     
     time_t now;
     time(&now);
     struct tm * now_tm;
     now_tm = localtime(&now);
-    strftime (out, 20, "\n%b %d %H:%M:%S ", now_tm);
+    
+    strftime (time_out, 20, "\n%b %d %H:%M:%S ", now_tm);
+    snprintf (str_out, 50, "yashd[%s:%d:%d]: ", data->ip_addr, data->port, data->s_fd);
         
     pthread_mutex_lock(&LOCK);
-    write (LOG_FD, out, strlen(out));   
-    fprintf (stderr, "yashd[%s:%d:%d]: ", data->ip_addr, data->port, data->s_fd);
+    write (LOG_FD, time_out, strlen(time_out));   
+    write (LOG_FD, str_out, strlen(str_out));   
     write (LOG_FD, line, strlen(line)-1);   
     pthread_mutex_unlock(&LOCK);
 

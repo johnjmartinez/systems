@@ -39,7 +39,7 @@ void log_job (pid_t pgid, job * j, int send_to_bg) {
     }
 }
 
-void job_notify (job * head_job) {                    // recycle statuses before prompt
+void job_notify (job * head_job, int sckt) {                    // recycle statuses before prompt
 
     job * j, * jprev, * jnext;
 
@@ -52,7 +52,7 @@ void job_notify (job * head_job) {                    // recycle statuses before
         if (j->done) {                  // notify about & delete done job
 
             if (j->in_bg)
-                 print_job_info (j, "Done   ");
+                 print_job_info (j, "Done   ", sckt);
 
             /* -- think I found bug with marking jobs */
             if (jprev)
@@ -63,7 +63,7 @@ void job_notify (job * head_job) {                    // recycle statuses before
             if (j) free (j);
         }
         if (j->paused) {
-            print_job_info (j, "Stopped");
+            print_job_info (j, "Stopped", sckt);
         }
        jprev = j;
     }
@@ -100,24 +100,27 @@ void update_status (job * head_job) {
     }
 }
 
-void job_list (job * head_job) {    // a.k.a. JOBS
+void job_list (job * head_job, int sckt) {    // a.k.a. JOBS
     job * j;   
     update_status (head_job);                           // update status info for jobs
 
     for (j = head_job; j; j = j->next) {
         if (j->in_bg) {
-            print_job_info (j, get_status_str(j));
+            print_job_info (j, get_status_str(j), sckt);
             j->notify = 0;
         }
     }
 }
 
-void job_list_all (job * head_job) {// DEBUG - list everything in job table
+void job_list_all (job * head_job, int sckt) {// DEBUG - list everything in job table
     job * j;
-    fprintf(stdout, "DEBUG\n");
+    char out[32];
+    
+    write (sckt, "DEBUG\n", 6);
     for (j = head_job; j; j = j->next) {
-        fprintf ( stdout, "%d %d\t", j->status, j->in_bg);
-        print_job_info (j, get_status_str(j));
+        snprintf ( out, 32, "%d %d\t", j->status, j->in_bg);
+        write (sckt, out, strlen(out));
+        print_job_info (j, get_status_str(j), sckt);
     }
 }
 
@@ -178,8 +181,9 @@ job * find_bg_job (job * head_job) {                  // find newest job->paused
     return NULL;
 }
 
-// TODO -- change to sckt fd
-void print_job_info (job * j, const char * status) {
-    fprintf(stdout, "[%d] -  %s\t%s\n", j->cpgid, status, j->line);
+void print_job_info (job * j, const char * status, int sckt) {
+    char out[512];
+    snprintf(out, 512, "[%d] -  %s\t%s\n", j->cpgid, status, j->line);
+    write(sckt, out, strlen(out));
 }
 

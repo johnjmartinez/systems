@@ -109,7 +109,7 @@ int parser (char * _tokens[]) {
     else if (strncmp(_tokens[0], "quit", 4) == 0) 
         return 2; // TODO -- check only token: _tokens[1] == NULL ? 
     
-    printf(" -ERROR: INVALID COMMAND\n");
+    printf(" ERROR: INVALID COMMAND\n# ");
     return 1; 
 }
 
