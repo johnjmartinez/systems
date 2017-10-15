@@ -27,9 +27,10 @@ int main () {
         if ( getsockname (request_fd, (struct sockaddr *) &remote_addr, &len) < 0 )
             error_n_exit("ERROR getsockname from socket");
 
-        /*log_time();
-        fprintf (stderr, "NEW CONNECTION\t%s:%d", inet_ntoa(remote_addr.sin_addr), 
-            ntohs(remote_addr.sin_port) );*/
+        /* DEBUG */
+        //log_time();
+        //fprintf (stderr, "NEW CONNECTION\t%s:%d:%d", inet_ntoa(remote_addr.sin_addr), 
+        //    ntohs(remote_addr.sin_port), request_fd );
 
         served = 0;
         for (i = 0 ; i<MAX_CONNECTIONS; i++) {
@@ -62,40 +63,11 @@ int main () {
     return(1);
 }
 
-/*// ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
-static void catch_C (int signo) { // ctrl+c
-
-    job * i;
-    if (cgid) {
-        if ( (i = find_job (cgid)) == NULL )
-            fprintf(stderr, "YASH catch_C: cgid %d not found\n", cgid);
-        else {
-            i->done = 1;
-            kill(cgid, SIGINT);
-        }
-    }
-    fprintf(stdout, "\n");
-}*/
-/*// ONLY APPLY TO FG (running) JOBS  -- hence using cgid
-static void catch_Z(int signo) {   // ctrl+z
-
-    job * i;
-    if (cgid) {
-        if ( (i = find_job (cgid)) == NULL )
-            fprintf(stderr, "YASH catch_Z: cgid %d not found\n", cgid);
-        else {
-            i->paused = 1;
-            kill(cgid, SIGTSTP);
-        }
-    }
-    fprintf(stdout, "\n");
-}*/
-
 void s_init () {
     
     socklen_t size;
     log_time ();
-    fprintf (stderr, "STARTING SERVER ");
+    fprintf (stderr, "STARTING SERVER");
 
     listen_fd = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if ( listen_fd < 0 )
@@ -114,7 +86,7 @@ void s_init () {
     if ( getsockname (listen_fd, (struct sockaddr *) &host_addr, &size) ) 
 	    error_n_exit("ERROR: s_init() -- getting socket name");
     
-    fprintf(stderr, "at port: %d", ntohs(host_addr.sin_port));
+    fprintf(stderr, "\tport: %d", ntohs(host_addr.sin_port));
     listen ( listen_fd, MAX_CONNECTIONS ); 
 }
 
@@ -175,10 +147,8 @@ void * shell_job (void * arg) {
     char * tokens[LINE_MAX/3];
     char * tmp;
     int pipe_pos, fwd_pos, bck_pos, count;
-    
     bool skip;
     
-    // TODO -- add quit to break out of loop if CTL+d is recvd
     for(;;) {
         job_notify (data->head_job);
         if ( write (sckt_fd, "\n# ", 3) < 0) 
@@ -188,36 +158,92 @@ void * shell_job (void * arg) {
         bzero (line, LINE_MAX);
         if (read (sckt_fd, line, LINE_MAX) < 0) 
             error_n_exit("ERROR reading from socket");
-
-        tmp =  strdup (line);
+        
         count = 0;
-        skip = tokenizer (tmp, tokens, &count);
-        //if ( skip || (tokens[0]==NULL) ) {
-        //    free (tmp);
-        //    continue;
-        //}
-        
-        // TODO -- check CTL cmds and create handlers (CTL+d = quit)
-        pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
-        skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos); 
-        if (skip) {
-            free (tmp);
-            continue;
-        }
-        
-        if (!valid (pipe_pos, fwd_pos, bck_pos)) {
-            free (tmp);
-            continue;
-        }
-        
         log_thread(line, data);
-        executor (tokens, pipe_pos, fwd_pos, bck_pos, count, line, data);
+        tmp = strdup (line);
+        
+        skip = tokenizer (tmp, tokens, &count, sckt_fd);
+        if ( skip || (tokens[0]==NULL) ) {
+            free (tmp);
+            log_thread(line, data);
+            continue;
+        }
+        
+        /* DEBUG */
+        log_time();
+        fprintf(stderr, "RECEIVED AT\t%s:%d:%d\t%s %s", data->ip_addr, data->port, data->s_fd,
+                tmp, tokens[0]);
+        
+        if (strncmp(tokens[0], "CMD", 3) == 0 ) {  
+             
+            if (strncmp(tokens[1], "quit", 1) == 0)
+                break;
+            
+            pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
+            skip = parser (&tokens[1], &pipe_pos, &fwd_pos, &bck_pos); 
+            if (skip) {
+                free (tmp);
+                log_thread(line, data);
+                continue;
+            }
+
+            if (!valid (pipe_pos, fwd_pos, bck_pos)) {
+                free (tmp);
+                log_thread(line, data);
+                continue;
+            }
+            
+            executor (&tokens[1], pipe_pos, fwd_pos, bck_pos, count, line, data);
+        }
+        else if (strncmp(tokens[0], "CTL", 3) == 0) {
+            
+            if (strncmp(tokens[1], "c", 1) == 0)
+                catch_c (data);
+            else if (strncmp(tokens[1], "z", 1) == 0)
+                catch_z (data);     
+            else if (strncmp(tokens[1], "d", 1) == 0)
+                break;
+        }
+        
         free (tmp);
     }
-    
+
     avail[data->tid] = 2;
     close (sckt_fd);
     pthread_exit(NULL);
+}
+
+// ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
+void catch_c (t_stuff * data) { // CTL c
+    job * i;
+    char * err = "YASHD catch_c: cgid not found\n";
+
+    if (data->cgid) {
+        if ( (i = find_job(data->cgid, data->head_job)) == NULL )
+            write (data->s_fd, err, strlen(err));
+        else {
+            i->done = 1;
+            kill(data->cgid, SIGINT);
+        }
+    }
+    write (data->s_fd, "\n# ", 3);
+}
+
+// ONLY APPLY TO FG (running) JOBS  -- hence using cgid
+void catch_z (t_stuff * data) {   // CTL z
+    job * i;
+    char * err = "YASHD catch_z: cgid not found\n";
+    
+    if (data->cgid) {
+        if ( (i = find_job (data->cgid, data->head_job)) == NULL )
+            write (data->s_fd, err, strlen(err));
+        else {
+            i->paused = 1;
+            kill(data->cgid, SIGTSTP);
+        }
+    }
+    write (data->s_fd, "\n# ", 3);
 }
 
 void error_n_exit(const char *msg) {
@@ -238,7 +264,7 @@ void log_thread(char * line, t_stuff * data) {
         
     pthread_mutex_lock(&LOCK);
     write (LOG_FD, out, strlen(out));   
-    fprintf (stderr, "yashd[%s:%d]: ", data->ip_addr, data->port);
+    fprintf (stderr, "yashd[%s:%d:%d]: ", data->ip_addr, data->port, data->s_fd);
     write (LOG_FD, line, strlen(line)-1);   
     pthread_mutex_unlock(&LOCK);
 

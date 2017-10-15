@@ -1,10 +1,10 @@
 #include "daemon.h"
 
-bool tokenizer (char * line, char * _tokens[], int * count) {
+bool tokenizer (char * line, char * _tokens[], int * count, int sckt) {
 
     if ( line[strlen(line)-1] != '\n' ) {           // check if line too long
-        printf("ERROR: command too long -- 200 chars max\n");
-        while (getchar() != '\n');                  // flush stdin
+        char * err = "ERROR: command too long -- 200 chars max\n";
+        write (sckt, err, strlen(err));
         return true;
     }
 
@@ -20,8 +20,8 @@ bool tokenizer (char * line, char * _tokens[], int * count) {
     return false;
 }
 
-bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {
-
+bool parser (char * _tokens[], int * pip, int * fwd, int * bck ) {    
+    
     for( int i = 0; _tokens[i] != NULL; i++ )  {
 
         if ( strncmp(_tokens[i], "&", 1) == 0 ) {   // & !wait for completion

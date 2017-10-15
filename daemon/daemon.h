@@ -58,9 +58,11 @@ void log_thread(char * line, t_stuff * data);
 void log_time();        // not thread safe: for server start and end
 void reuse_port(int s);
 void error_n_exit(const char *msg);
+void catch_c(t_stuff * data);         // CTL c
+void catch_z(t_stuff * data);         // CTL z
 
 // tokenizer.c
-bool tokenizer (char * line, char * _tokens[], int * count);
+bool tokenizer (char * line, char * _tokens[], int * count, int sckt);
 bool parser (char * _tokens[], int * pip, int * fwd, int * bck );
 bool valid (int pip, int out, int in);
 

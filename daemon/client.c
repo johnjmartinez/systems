@@ -21,6 +21,8 @@ static void catch_Z(int signo) { // ctrl+z
 
 int main (int argc, char* argv[]) {
     
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     if (argc < 2) {
        fprintf(stderr,"Usage: %s hostname\n", argv[0]);
        exit(0);
@@ -47,11 +49,11 @@ int main (int argc, char* argv[]) {
     
     // TODO -- Handle SIGPIPE from server going down?
     pthread_create (&recv_t, NULL, listen_n_display, NULL);
+    
     connection_error = false;
     while (!connection_error) {
-        fflush(stdout);
+        
         skip = false;
-
         if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
             break;
         
@@ -117,6 +119,7 @@ void * listen_n_display (void * arg) {
     char buf[4096];
     
     for (;;) {
+
         num = read (sckt_fd, buf, sizeof(buf));
         if (num < 0) {
             perror("ERROR: receiving stream msg");
@@ -127,7 +130,7 @@ void * listen_n_display (void * arg) {
             printf("%s", buf);
         }
         else {    
-            perror("Disconnected? ...");
+            perror("ERROR: read nothing from sckt");
             break;
         }
     }
