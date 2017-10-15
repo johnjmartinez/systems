@@ -117,11 +117,9 @@ void d_init() {
     LOG_FD = fileno (log_file);         // get GLOBAL log file descriptor
     dup2 (LOG_FD, STDERR_FILENO);       // redirect STDERR to log
 
-    /* TODO -- SIGCHLD & SIGPIPE
+    /* TODO -- SIGCHLD 
     if ( signal(SIGCHLD, sig_chld) < 0 ) 
         error_n_exit("Signal SIGCHLD");
-    if ( signal(SIGPIPE, sig_pipe) < 0 ) 
-        error_n_exit("Signal SIGPIPE");
      */
     
     //umask(0);                         // implicit declaration of function ‘umask'. SO???
@@ -277,7 +275,6 @@ void log_thread(char * line, t_stuff * data) {
     write (LOG_FD, str_out, strlen(str_out));   
     write (LOG_FD, line, strlen(line)-1);   // get rid of line last char ... usually \n
     pthread_mutex_unlock(&LOCK);
-
 }
 
 void log_time() { 

@@ -112,7 +112,7 @@ void job_list (job * head_job, int sckt) {    // a.k.a. JOBS
     }
 }
 
-void job_list_all (job * head_job, int sckt) {// DEBUG - list everything in job table
+void job_list_all (job * head_job, int sckt) {  // DEBUG - list everything in job table
     job * j;
     char out[32];
     
@@ -154,7 +154,7 @@ void kill_jobs (job * head_job) {
     }
 }
 
-job * find_job (pid_t pgid, job * head_job) {           // find active job using pgid.
+job * find_job (pid_t pgid, job * head_job) {       // find active job using pgid.
 
   job * j;
   for (j = head_job; j; j = j->next)
@@ -163,7 +163,7 @@ job * find_job (pid_t pgid, job * head_job) {           // find active job using
   return NULL;
 }
 
-job * find_fg_job (job * head_job) {                  // find newest job->paused/in_bg
+job * find_fg_job (job * head_job) {                // find newest job->paused/in_bg
 
     job * j;
     for (j = head_job; j; j = j->next)
@@ -172,7 +172,7 @@ job * find_fg_job (job * head_job) {                  // find newest job->paused
     return NULL;
 }
 
-job * find_bg_job (job * head_job) {                  // find newest job->paused
+job * find_bg_job (job * head_job) {                // find newest job->paused
 
     job * j;
     for (j = head_job; j; j = j->next)
