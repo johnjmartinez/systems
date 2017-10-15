@@ -9,3 +9,5 @@ yashd
 yash*log
 yash*pid
 build
+*.tgz
+
