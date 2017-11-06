@@ -39,22 +39,23 @@ void log_job (pid_t pgid, job * j, int send_to_bg) {
     }
 }
 
-void job_notify (job * head_job, int sckt) {                    // recycle statuses before prompt
+void job_notify (t_stuff * t) {                 // recycle statuses before prompt
 
     job * j, * jprev, * jnext;
-
-    update_status (head_job);                   // update status info for jobs
-
+    job * head_job = t->head_job;
+    int sckt = t->s_fd;
+    
+    update_status (head_job);         // update status info for jobs
+    
     jprev = NULL;
     for (j = head_job; j; j = jnext) {
         jnext = j->next;
 
-        if (j->done) {                  // notify about & delete done job
+        if (j->done) {                          // notify about & delete done job
 
             if (j->in_bg)
                  print_job_info (j, "Done   ", sckt);
 
-            /* -- think I found bug with marking jobs */
             if (jprev)
                 jprev->next = jnext;
             else
@@ -67,6 +68,11 @@ void job_notify (job * head_job, int sckt) {                    // recycle statu
             print_job_info (j, "Stopped", sckt);
         }
        jprev = j;
+    }
+    
+    if ( (head_job == NULL) || (head_job->cpgid != t->cgid) ) {
+        if ( write (sckt, "\n# ", 3) < 0) 
+            error_n_exit("ERROR writing to socket");
     }
 }
 
@@ -101,27 +107,27 @@ void update_status (job * head_job) {
     }
 }
 
-void job_list (job * head_job, int sckt) {    // a.k.a. JOBS
+void job_list (t_stuff * t) {      // a.k.a. JOBS
     job * j;   
-    update_status (head_job);                           // update status info for jobs
+    update_status (t->head_job);                   // update status info for jobs
 
-    for (j = head_job; j; j = j->next) {
+    for (j = t->head_job; j; j = j->next) {
         if (j->in_bg) {
-            print_job_info (j, get_status_str(j), sckt);
+            print_job_info (j, get_status_str(j), t->s_fd);
             j->notify = 0;
         }
     }
 }
 
-void job_list_all (job * head_job, int sckt) {  // DEBUG - list everything in job table
+void job_list_all (t_stuff * t) {  // DEBUG - list everything in job table
     job * j;
     char out[32];
     
-    write (sckt, "DEBUG\n", 6);
-    for (j = head_job; j; j = j->next) {
+    write (t->s_fd, "DEBUG\n", 6);
+    for (j = t->head_job; j; j = j->next) {
         snprintf ( out, 32, "%d %d\t", j->status, j->in_bg);
-        write (sckt, out, strlen(out));
-        print_job_info (j, get_status_str(j), sckt);
+        write (t->s_fd, out, strlen(out));
+        print_job_info (j, get_status_str(j), t->s_fd);
     }
 }
 

@@ -20,7 +20,7 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
         i->paused = 0;
         
         kill (i->cpgid, SIGCONT);
-        rc = waitpid (i->cpgid, &status, WUNTRACED); 
+        rc = waitpid (i->cpgid, &status, WUNTRACED | WCONTINUED | WNOHANG ); 
         if (rc > 0) 
             i->status = status;     
     }
@@ -41,8 +41,8 @@ bool executor (char * cmds[], int pip, int out, int in, int count, char * line, 
             i->status = status;  
     }
     else if ( (strncmp (cmds[0],"jobs",4)==0) ) {               // JOBS
-         if (count==1) job_list (head, sckt);
-         else job_list_all (head, sckt);
+         if (count==1) job_list (data);
+         else job_list_all (data);
     }    
     else if ( (strncmp (cmds[0],"cd",2)==0) ) {                 // CD -- chdir ()
         if ( count==2 ) {                                       // TODO -- update env $*WD

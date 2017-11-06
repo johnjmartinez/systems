@@ -86,9 +86,9 @@ int running_job (job * j);
 job * find_bg_job (job * head);
 job * find_fg_job (job * head);
 job * find_job (pid_t pgid, job * head);
-void job_list(job * head, int sckt) ;
-void job_list_all(job * head, int sckt) ;
-void job_notify (job * head, int sckt);
+void job_list(t_stuff * data) ;
+void job_list_all(t_stuff * data) ;
+void job_notify (t_stuff * data);
 void print_job_info (job * j, const char * status, int sckt);
 void kill_jobs (job * head);
 void log_job (pid_t pgid, job * j, int bg); // waitpid

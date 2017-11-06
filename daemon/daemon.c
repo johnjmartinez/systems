@@ -7,12 +7,12 @@ pthread_mutex_t LOCK = PTHREAD_MUTEX_INITIALIZER; // OR pthread_mutex_init(&LOCK
 
 int main () {
     
-    int i, served;
     signal(SIGPIPE, SIG_IGN);
-
+   
     //d_init();   // daemon init
     s_init();   // socket init: socket(), bind(), listen()
-
+    
+    int i, served;
     for (i = 0 ; i<MAX_CONNECTIONS; i++) {
         avail[i] = 1;
         t_data[i].tid = i;
@@ -27,12 +27,7 @@ int main () {
         
         if ( getsockname (request_fd, (struct sockaddr *) &remote_addr, &len) < 0 )
             error_n_exit("ERROR getsockname from socket");
-/*
-        // DEBUG 
-        log_time();
-        fprintf (stderr, "NEW CONNECTION\t%s:%d:%d", inet_ntoa(remote_addr.sin_addr), 
-            ntohs(remote_addr.sin_port), request_fd );
-*/
+
         served = 0;
         for (i = 0 ; i<MAX_CONNECTIONS; i++) {
             if ( (avail[i] == 1) && !served) {
@@ -137,7 +132,7 @@ void d_init() {
 }
 
 void * shell_job (void * arg) {    
-    
+        
     t_stuff * data = (t_stuff *) arg;
     data->head_job = NULL;
     int sckt_fd = data->s_fd;
@@ -151,11 +146,13 @@ void * shell_job (void * arg) {
     log_thread("STARTING CONNECTION ", data);
     for(;;) {
         
-        job_notify (data->head_job, data->s_fd);
+        job_notify (data);
+/*
         if ( write (sckt_fd, "\n# ", 3) < 0) {
             perror("ERROR writing to socket");
             break;
         }
+*/
         
         skip = false;
         bzero (line, LINE_MAX);
@@ -181,16 +178,11 @@ void * shell_job (void * arg) {
             
             pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
             skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos, sckt_fd); 
-            if (skip) {
+            if ( skip || !valid (pipe_pos, fwd_pos, bck_pos, sckt_fd) ) {
                 free (tmp);
                 continue;
             }
-
-            if (!valid (pipe_pos, fwd_pos, bck_pos, sckt_fd)) {
-                free (tmp);
-                continue;
-            }
-        
+            
             executor (tokens, pipe_pos, fwd_pos, bck_pos, count-1, line, data);
         }
         else if (strncmp(tokens[0], "CTL", 3) == 0) {
