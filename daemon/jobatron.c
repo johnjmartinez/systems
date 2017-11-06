@@ -60,7 +60,8 @@ void job_notify (job * head_job, int sckt) {                    // recycle statu
             else
                 head_job = jnext;
 
-            if (j) free (j);
+            if (j) 
+                free (j);
         }
         if (j->paused) {
             print_job_info (j, "Stopped", sckt);

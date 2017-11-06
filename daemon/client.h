@@ -18,6 +18,7 @@
 int sckt_fd;
 bool connection_error;
 pthread_t recv_t;
+char OUT_BUFFER[204];
 
 bool tokenizer (char * line, char * _tokens[]);
 int parser (char * _tokens[]);

@@ -39,7 +39,7 @@ int main (int argc, char* argv[]) {
 
     char line[LINE_MAX];
     char * _tokens[LINE_MAX / 3];
-    char * tmp, * out = "CMD ";
+    char * tmp;
 
     int skip, quit;
     struct sockaddr_in server;
@@ -71,9 +71,9 @@ int main (int argc, char* argv[]) {
         quit = parser (_tokens);
         if (quit)
             break;
-
-        strcat (out, line);
-        write (sckt_fd, out, strlen(out));
+            
+        snprintf (OUT_BUFFER, 204, "CMD %s", line);
+        write (sckt_fd, OUT_BUFFER, strlen(OUT_BUFFER));
         free(tmp);
 
     } while (!connection_error);

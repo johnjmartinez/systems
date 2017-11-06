@@ -60,6 +60,7 @@ void reuse_port(int s);
 void error_n_exit(const char *msg);
 void catch_c(t_stuff * data);   // CTL c
 void catch_z(t_stuff * data);   // CTL z
+void thread_print(int sckt_fd);        
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count, int sckt);

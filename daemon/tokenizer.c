@@ -23,6 +23,9 @@ bool tokenizer (char * line, char * _tokens[], int * count, int sckt) {
 bool parser (char * _tokens[], int * pip, int * fwd, int * bck, int sckt ) {    
     char * err;
     
+    if (_tokens[0] == NULL) 
+        return true;
+    
     for( int i = 0; _tokens[i] != NULL; i++ )  {
 
         if ( strncmp(_tokens[i], "&", 1) == 0 ) {   // & !wait for completion

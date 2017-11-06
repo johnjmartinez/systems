@@ -10,7 +10,7 @@ int main () {
     int i, served;
     signal(SIGPIPE, SIG_IGN);
 
-    d_init();   // daemon init
+    //d_init();   // daemon init
     s_init();   // socket init: socket(), bind(), listen()
 
     for (i = 0 ; i<MAX_CONNECTIONS; i++) {
@@ -102,7 +102,7 @@ void d_init() {
         error_n_exit("ERROR: d_init - cannot fork\n");
     else if (pid) 
         exit(0);                        // PARENT EXITS - server to background
-
+ 
     for (fd = getdtablesize()-1; fd>0; fd--) 
         close(fd);                      // close any open fds
 
@@ -120,7 +120,7 @@ void d_init() {
     /* TODO -- SIGCHLD 
     if ( signal(SIGCHLD, sig_chld) < 0 ) 
         error_n_exit("Signal SIGCHLD");
-     */
+    */
     
     //umask(0);                         // gives: implicit declaration of function ‘umask'. SO???
     chdir("/");
@@ -173,16 +173,8 @@ void * shell_job (void * arg) {
             free (tmp);
             continue;
         }
-/*
-        // DEBUG
-        log_time();
-        fprintf(stderr, "RECEIVED AT\t%s:%d:%d\t%s %s", data->ip_addr, data->port, data->s_fd,
-                tmp, tokens[0]);
-*/
+
         if (strncmp(tokens[0], "CMD", 3) == 0 ) {  
-             
-            if (strncmp(tokens[1], "quit", 1) == 0)
-                break;
             
             for (int x=1; x <= count; x++) // get rid of first token (CMD)
                 tokens[x-1] = tokens[x];
@@ -220,7 +212,7 @@ void * shell_job (void * arg) {
     pthread_exit(NULL);
 }
 
-// ONLY APPLY TO FG (stopped or running) JOBS -- hence using cgid
+// ONLY APPLY TO FG (stopped or running) JOBS
 void catch_c (t_stuff * data) { // CTL c
     job * i;
     char * err = "YASHD catch_c: cgid not found\n";
@@ -235,7 +227,7 @@ void catch_c (t_stuff * data) { // CTL c
     }
 }
 
-// ONLY APPLY TO FG (running) JOBS  -- hence using cgid
+// ONLY APPLY TO FG (running) JOBS
 void catch_z (t_stuff * data) {   // CTL z
     job * i;
     char * err = "YASHD catch_z: cgid not found\n";
@@ -256,8 +248,7 @@ void error_n_exit(const char *msg) {
 }
 
 void log_thread(char * line, t_stuff * data) { 
-    // log template:
-    // <date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>
+    // log template: <date_n_time> yashd[<Client_IP>:<Port>]: <Command_Executed>
     char time_out[20];
     char str_out[50];
     
