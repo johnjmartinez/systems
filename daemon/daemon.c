@@ -122,7 +122,7 @@ void d_init() {
         error_n_exit("Signal SIGCHLD");
      */
     
-    //umask(0);                         // implicit declaration of function ‘umask'. SO???
+    //umask(0);                         // gives: implicit declaration of function ‘umask'. SO???
     chdir("/");
     pid = setsid();                     // put self in new process group 
     setpgrp();        
@@ -184,7 +184,7 @@ void * shell_job (void * arg) {
             if (strncmp(tokens[1], "quit", 1) == 0)
                 break;
             
-            for (int x=1; x <= count; x++)
+            for (int x=1; x <= count; x++) // get rid of first token (CMD)
                 tokens[x-1] = tokens[x];
             
             pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
@@ -212,7 +212,6 @@ void * shell_job (void * arg) {
         }
         
         free (tmp);
-        sleep(1);
     }
     log_thread("CLOSING CONNECTION ", data);
         
@@ -291,7 +290,7 @@ void log_time() {
 }
 
 void reuse_port(int s ){
-    int one=1;
+    int one = 1;
     if ( setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(one)) == -1 )
         error_n_exit("ERROR: setsockopt -- SO_REUSEPORT\n");
 } 

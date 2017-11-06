@@ -34,32 +34,32 @@ typedef struct job {
   int paused;           // 1 if process stopped
   int status;           // last reported status value
   int notify;           // 1 if status change
-  int in_bg;
+  int in_bg;            // 1 if job is in background
 } job ;
 
 typedef struct thread_stuff { 
-    int tid;
+    int tid;            // thread id
     pid_t cgid;         // current group id in 'fg'
     int s_fd;           // socket fd
-    int port;           
-    char * ip_addr;
-    job * head_job;     
+    int port;           // port number
+    char * ip_addr;     // ip address string
+    job * head_job;     // pointer to job_list head
 } t_stuff;
 
 pthread_t p[MAX_CONNECTIONS];
 t_stuff t_data[MAX_CONNECTIONS];
 int LOG_FD;
 
-// daemon.c             // main()
-void d_init();          // daemon 
-void s_init();          // socket/connection init
-void * shell_job (void * arg);
+// daemon.c                     // main()
+void d_init();                  // daemon 
+void s_init();                  // socket/connection init
+void * shell_job (void * arg);  // actual shell daemon 
 void log_thread(char * line, t_stuff * data);
-void log_time();        // not thread safe: for server start and end
+void log_time();                // not thread safe: for server start and end
 void reuse_port(int s);
 void error_n_exit(const char *msg);
-void catch_c(t_stuff * data);         // CTL c
-void catch_z(t_stuff * data);         // CTL z
+void catch_c(t_stuff * data);   // CTL c
+void catch_z(t_stuff * data);   // CTL z
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count, int sckt);

@@ -11,7 +11,7 @@
 #include <sys/socket.h> // sockaddr_in 
 #include <netdb.h>      // struct hostent
 
-#define LINE_MAX 204    // CMD/CTL + \s + <cmd>
+#define LINE_MAX 200    // CMD/CTL + \s + <cmd>
 #define	DELIM " \t\a\r" // took out \n so that client would recognize empty line as invalid
 #define PORT_NUM 3826
 

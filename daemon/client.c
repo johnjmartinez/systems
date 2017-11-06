@@ -18,7 +18,7 @@ static void catch_Z(int signo) { // ctrl+z
     send (sckt_fd, "CTL z \n", 7, 0);
 }
 
-static void catch_PIPE(int signo) { // ctrl+z
+static void catch_PIPE(int signo) { // sig pipe 
     pthread_join(recv_t, NULL);   
     exit(1);
 }
@@ -39,9 +39,9 @@ int main (int argc, char* argv[]) {
 
     char line[LINE_MAX];
     char * _tokens[LINE_MAX / 3];
-    char * tmp;
+    char * tmp, * out = "CMD ";
 
-    int skip;
+    int skip, quit;
     struct sockaddr_in server;
     struct hostent * target;
        
@@ -68,17 +68,12 @@ int main (int argc, char* argv[]) {
             continue;
         }
 
-        skip = parser (_tokens);
-        if (skip) {
-            if (skip > 1) {  // QUIT
-                // /*DEBUG */ printf("\nskip:%d\n",skip );
-                break;
-            }
-            free(tmp);
-            continue;
-        }
-        
-        write (sckt_fd, line, strlen(line));
+        quit = parser (_tokens);
+        if (quit)
+            break;
+
+        strcat (out, line);
+        write (sckt_fd, out, strlen(out));
         free(tmp);
 
     } while (!connection_error);
@@ -87,7 +82,6 @@ int main (int argc, char* argv[]) {
     printf("\n");
     return (EXIT_SUCCESS);
 }
-
 
 bool tokenizer (char * line, char * _tokens[]) {
 
@@ -107,17 +101,11 @@ bool tokenizer (char * line, char * _tokens[]) {
 }
 
 int parser (char * _tokens[]) {
+
+    if (strncmp(_tokens[0], "quit", 4) == 0) 
+        return 1; // TODO -- check only token: _tokens[1] == NULL ? 
     
-    // ERROR CHECKING -- check first token is either CMD, CTL or quit
-    if (strncmp(_tokens[0], "CMD", 3) == 0) 
-        return 0;
-    else if (strncmp(_tokens[0], "CTL", 3) == 0) 
-        return 0;
-    else if (strncmp(_tokens[0], "quit", 4) == 0) 
-        return 2; // TODO -- check only token: _tokens[1] == NULL ? 
-    
-    printf("-- invalid command\n# ");
-    return 1; 
+    return 0; 
 }
 
 void * listen_n_display (void * arg) { // THREAD
