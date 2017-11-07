@@ -21,12 +21,12 @@ job * new_job (char * line, job * head_job) {
 }
 
 void log_job (pid_t pgid, job * j, int send_to_bg) {
-    int status, rc;
+    int status = -1, rc;
     j->cpgid = pgid;
 
     if (!send_to_bg ) {                 // foreground
         j->cpgid = pgid;
-        rc =  waitpid (j->cpgid, &status, WUNTRACED ) ;
+        rc =  waitpid (j->cpgid, &status, WUNTRACED | WNOHANG ) ;
         if (rc > 0)
             j->status = status;
         // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);
@@ -70,9 +70,10 @@ void job_notify (t_stuff * t) {                 // recycle statuses before promp
        jprev = j;
     }
     
-    if ( (head_job == NULL) || (head_job->cpgid != t->cgid) ) {
+    if ( t->write_ok && ((head_job == NULL) || (head_job->cpgid != t->cgid)) ) {
         if ( write (sckt, "\n# ", 3) < 0) 
             error_n_exit("ERROR writing to socket");
+        t->write_ok = false;
     }
 }
 

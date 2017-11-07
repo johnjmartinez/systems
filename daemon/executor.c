@@ -190,7 +190,7 @@ void exec_in_out (char * cmd[], char * f_in, char * f_out, job * j, int bg, t_st
 void exec_pipe (char * cmd1[], char * cmd2[], job * j, int bg, t_stuff * t) {
     int cid1, cid2; 
     int pipfd[2];   // | in cmd line
-    pipe (pipfd);
+    pipe (pipfd); 
 
     if ( (cid1=fork ()) < 0 ) 
         perror ("ERROR: fork1 failed");

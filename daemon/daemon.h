@@ -15,7 +15,7 @@
 #include <time.h>
 #include <pthread.h>
 
-#define LINE_MAX 200
+#define LINE_MAX 200+4
 #define	DELIM " \t\n\a\r"
 
 #define O_FOUT O_WRONLY|O_CREAT|O_TRUNC
@@ -44,7 +44,17 @@ typedef struct thread_stuff {
     int port;           // port number
     char * ip_addr;     // ip address string
     job * head_job;     // pointer to job_list head
+    bool write_ok;      // synch between aux and main thread
 } t_stuff;
+
+typedef struct listener_stuff {
+    int num_read;               // chars read in socket
+    int sckt_fd;                // socket file descriptor
+    char in_buffer[LINE_MAX];   // shared buffer between main and aux threads
+    pthread_mutex_t check_lock; // lock for buffer read/write/check
+    bool ready;                 // check flag
+    t_stuff * data;             // reference to main thread's data.
+} t_incoming;
 
 pthread_t p[MAX_CONNECTIONS];
 t_stuff t_data[MAX_CONNECTIONS];
@@ -61,6 +71,7 @@ void error_n_exit(const char *msg);
 void catch_c(t_stuff * data);   // CTL c
 void catch_z(t_stuff * data);   // CTL z
 void thread_print(int sckt_fd);        
+void * aux_listen (void * incoming);
 
 // tokenizer.c
 bool tokenizer (char * line, char * _tokens[], int * count, int sckt);

@@ -53,8 +53,8 @@ int main (int argc, char* argv[]) {
     if ( connect ( sckt_fd, (struct  sockaddr *) &server, sizeof(server) ) < 0)
         error_n_exit ("ERROR connecting");
     
-    pthread_create (&recv_t, NULL, listen_n_display, NULL);
     connection_error = false;
+    pthread_create (&recv_t, NULL, listen_n_display, NULL);
     do {
         
         skip = false;

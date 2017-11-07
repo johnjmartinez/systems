@@ -135,37 +135,48 @@ void * shell_job (void * arg) {
         
     t_stuff * data = (t_stuff *) arg;
     data->head_job = NULL;
-    int sckt_fd = data->s_fd;
+    data->write_ok = true;
+    int sckt_fd = data->s_fd;    
 
     char line[LINE_MAX];
     char * tokens[LINE_MAX/3];
     char * tmp;
     int pipe_pos, fwd_pos, bck_pos, count;
-    bool skip;
-    
+    bool skip, in_ready;
+    pthread_t auxiliar;
+
     log_thread("STARTING CONNECTION ", data);
+
+    t_incoming * in = (t_incoming *) malloc ( sizeof (t_incoming) );
+    in->data = data;
+    in->ready = false;
+    in->sckt_fd = sckt_fd;
+    pthread_mutex_init(&in->check_lock, NULL);
+    pthread_create (&auxiliar, NULL, aux_listen, in);
+    
     for(;;) {
         
-        job_notify (data);
-/*
-        if ( write (sckt_fd, "\n# ", 3) < 0) {
-            perror("ERROR writing to socket");
-            break;
-        }
-*/
-        
+        job_notify (data); // contains write to socket
+
         skip = false;
         bzero (line, LINE_MAX);
-        if (read (sckt_fd, line, LINE_MAX) < 0) {
-            perror("ERROR reading from socket");
-            break;
-        }
         
-        count = 0;
+        pthread_mutex_lock(&in->check_lock);
+        in_ready = in->ready;
+        if (in_ready) {
+            count = in->num_read;
+            strcpy (line, in->in_buffer);
+            in->ready = false;
+        }    
+        pthread_mutex_unlock(&in->check_lock);
+        
+        if (!in_ready || !count)
+            continue;
+        
         log_thread(line, data);
         tmp = strdup (line);
         
-        skip = tokenizer (tmp, tokens, &count, sckt_fd);
+        skip = tokenizer (tmp, tokens, &count, sckt_fd); // count will be converted to tokens num
         if ( skip || (tokens[0]==NULL) ) {
             free (tmp);
             continue;
@@ -196,6 +207,8 @@ void * shell_job (void * arg) {
         }
         
         free (tmp);
+        sleep(1);
+        data->write_ok =true;
     }
     log_thread("CLOSING CONNECTION ", data);
         
@@ -278,3 +291,34 @@ void reuse_port(int s ){
         error_n_exit("ERROR: setsockopt -- SO_REUSEPORT\n");
 } 
 
+void * aux_listen (void * incoming) { // AUXILIARY THREAD
+    
+    char buf[LINE_MAX];
+    int num;
+    t_incoming * in =  (t_incoming *) incoming;
+
+    for (;;) {
+        bzero(buf, LINE_MAX);
+        if (in->ready)
+            continue;
+        else if ( (num = read (in->sckt_fd, buf, LINE_MAX)) < 0 ) {
+            log_thread("ERROR: receiving client msg ", in->data);
+            break;
+        }
+        else if (num) {
+            buf[num]='\0';
+            pthread_mutex_lock(&in->check_lock);
+            strcpy (in->in_buffer, buf);
+            in->num_read = num;
+            in->ready = true;
+            pthread_mutex_unlock(&in->check_lock);
+        }
+        else {    
+            log_thread("ERROR: Disconnected ", in->data);
+            close (in->sckt_fd);
+            break;
+        }
+    }
+    
+    pthread_exit(NULL);
+}
