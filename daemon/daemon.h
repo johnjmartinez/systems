@@ -53,6 +53,7 @@ typedef struct listener_stuff {
     char in_buffer[LINE_MAX];   // shared buffer between main and aux threads
     pthread_mutex_t check_lock; // lock for buffer read/write/check
     bool ready;                 // check flag
+    bool close;                 // connection should be closed
     t_stuff * data;             // reference to main thread's data.
 } t_incoming;
 

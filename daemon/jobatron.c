@@ -23,13 +23,14 @@ job * new_job (char * line, job * head_job) {
 void log_job (pid_t pgid, job * j, int send_to_bg) {
     int status = -1, rc;
     j->cpgid = pgid;
+    
+    // /*DEBUG*/ printf("\n\tLOGGING: pid %d - %s", j->cpgid, j->line);
 
     if (!send_to_bg ) {                 // foreground
         j->cpgid = pgid;
-        rc =  waitpid (j->cpgid, &status, WUNTRACED | WNOHANG ) ;
+        rc =  waitpid (j->cpgid, &status, WUNTRACED ) ;
         if (rc > 0)
             j->status = status;
-        // /*DEBUG*/ printf("--: status %d of %d\n", status, pgid);
     }
     else  {                              // background
         j->in_bg = 1;
@@ -37,15 +38,15 @@ void log_job (pid_t pgid, job * j, int send_to_bg) {
         if (rc > 0)
             j->status = status;
     }
+    
 }
 
 void job_notify (t_stuff * t) {                 // recycle statuses before prompt
 
     job * j, * jprev, * jnext;
     job * head_job = t->head_job;
-    int sckt = t->s_fd;
     
-    update_status (head_job);         // update status info for jobs
+    update_status (head_job);                   // update status info for jobs
     
     jprev = NULL;
     for (j = head_job; j; j = jnext) {
@@ -53,25 +54,30 @@ void job_notify (t_stuff * t) {                 // recycle statuses before promp
 
         if (j->done) {                          // notify about & delete done job
 
-            if (j->in_bg)
-                 print_job_info (j, "Done   ", sckt);
+            if (j->in_bg) {
+                print_job_info (j, "Done   ", t->s_fd);
+                j->notify = 1;
+            }
 
             if (jprev)
                 jprev->next = jnext;
             else
                 head_job = jnext;
 
-            if (j) 
-                free (j);
+            //if (j) 
+            //    free (j);
         }
-        if (j->paused) {
-            print_job_info (j, "Stopped", sckt);
+        
+        if (j->paused && !j->notify)  {
+            print_job_info (j, "Stopped", t->s_fd);
+            j->notify = 1;
         }
-       jprev = j;
+        
+        jprev = j;
     }
     
     if ( t->write_ok && ((head_job == NULL) || (head_job->cpgid != t->cgid)) ) {
-        if ( write (sckt, "\n# ", 3) < 0) 
+        if ( write (t->s_fd, "\n# ", 3) < 0) 
             error_n_exit("ERROR writing to socket");
         t->write_ok = false;
     }
@@ -79,7 +85,7 @@ void job_notify (t_stuff * t) {                 // recycle statuses before promp
 
 void update_status (job * head_job) {
 
-    int status = -1;
+    int status = -1234;
     job * j;
     for (j = head_job; j; j = j->next) {
 
@@ -92,8 +98,9 @@ void update_status (job * head_job) {
         // /*DEBUG*/ if (WIFCONTINUED (status)) c = 1;
         // /*DEBUG*/ if (WIFEXITED (status))    e = 1;
         // /*DEBUG*/ if (WIFSIGNALED (status))  s = 1;
-        // /*DEBUG*/ fprintf (stdout, "%d\tUPDATE raw_status %d of %d\t[%d,%d,%d,%d]\n",
-        // /*DEBUG*/                   rc, status, j->cpgid, t, c, e, s );
+        // /*DEBUG*/ if (rc>0 && status!=-1234)
+        // /*DEBUG*/     printf ("\n\t%d\tUPDATE raw_status %d of %d\t[%d,%d,%d,%d]",
+        // /*DEBUG*/               rc, status, j->cpgid, t, c, e, s );
 
         if (rc > 0) {
             j->status = status;
@@ -108,9 +115,9 @@ void update_status (job * head_job) {
     }
 }
 
-void job_list (t_stuff * t) {      // a.k.a. JOBS
+void job_list (t_stuff * t) {       // a.k.a. JOBS
     job * j;   
-    update_status (t->head_job);                   // update status info for jobs
+    update_status (t->head_job);    // update status info for jobs
 
     for (j = t->head_job; j; j = j->next) {
         if (j->in_bg) {

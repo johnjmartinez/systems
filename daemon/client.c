@@ -58,8 +58,10 @@ int main (int argc, char* argv[]) {
     do {
         
         skip = false;
-        if (fgets(line, LINE_MAX, stdin) == NULL)  // catch ctrl+d (EOF) on empty line
+        if (fgets(line, LINE_MAX, stdin) == NULL) { // catch ctrl+d (EOF) on empty line
+            send (sckt_fd, "CTL d \n", 7, 0);
             break;
+        }
         
         tmp = strdup (line);
         skip = tokenizer (tmp, _tokens);

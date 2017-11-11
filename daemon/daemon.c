@@ -9,7 +9,7 @@ int main () {
     
     signal(SIGPIPE, SIG_IGN);
    
-    //d_init();   // daemon init
+    d_init();   // daemon init
     s_init();   // socket init: socket(), bind(), listen()
     
     int i, served;
@@ -145,7 +145,7 @@ void * shell_job (void * arg) {
     bool skip, in_ready;
     pthread_t auxiliar;
 
-    log_thread("STARTING CONNECTION ", data);
+    log_thread ("STARTING CONNECTION ", data);
 
     t_incoming * in = (t_incoming *) malloc ( sizeof (t_incoming) );
     in->data = data;
@@ -156,61 +156,49 @@ void * shell_job (void * arg) {
     
     for(;;) {
         
+        if (in->close)
+                break;
         job_notify (data); // contains write to socket
 
         skip = false;
         bzero (line, LINE_MAX);
         
-        pthread_mutex_lock(&in->check_lock);
-        in_ready = in->ready;
-        if (in_ready) {
+        pthread_mutex_lock (&in->check_lock);
+          in_ready = in->ready;
+          if (in_ready) {
             count = in->num_read;
             strcpy (line, in->in_buffer);
             in->ready = false;
-        }    
-        pthread_mutex_unlock(&in->check_lock);
+          }    
+        pthread_mutex_unlock (&in->check_lock);
         
         if (!in_ready || !count)
             continue;
         
-        log_thread(line, data);
+        log_thread (line, data);
         tmp = strdup (line);
-        
-        skip = tokenizer (tmp, tokens, &count, sckt_fd); // count will be converted to tokens num
-        if ( skip || (tokens[0]==NULL) ) {
-            free (tmp);
-            continue;
-        }
+        tokenizer (tmp, tokens, &count, sckt_fd);   // count will be converted to tokens num
 
         if (strncmp(tokens[0], "CMD", 3) == 0 ) {  
             
-            for (int x=1; x <= count; x++) // get rid of first token (CMD)
+            for (int x=1; x <= count; x++)          // get rid of first token (CMD)
                 tokens[x-1] = tokens[x];
             
             pipe_pos = 0; fwd_pos = 0; bck_pos = 0;
             skip = parser (tokens, &pipe_pos, &fwd_pos, &bck_pos, sckt_fd); 
             if ( skip || !valid (pipe_pos, fwd_pos, bck_pos, sckt_fd) ) {
                 free (tmp);
+                data->write_ok = true;
                 continue;
             }
             
             executor (tokens, pipe_pos, fwd_pos, bck_pos, count-1, line, data);
         }
-        else if (strncmp(tokens[0], "CTL", 3) == 0) {
-            
-            if (strncmp(tokens[1], "c", 1) == 0)
-                catch_c (data);
-            else if (strncmp(tokens[1], "z", 1) == 0)
-                catch_z (data);     
-            else if (strncmp(tokens[1], "d", 1) == 0)
-                break;
-        }
-        
         free (tmp);
-        sleep(1);
+        sleep(.7);
         data->write_ok =true;
     }
-    log_thread("CLOSING CONNECTION ", data);
+    log_thread ("CLOSING CONNECTION ", data);
         
     close (sckt_fd);
     avail[data->tid] = 2;
@@ -227,6 +215,7 @@ void catch_c (t_stuff * data) { // CTL c
             write (data->s_fd, err, strlen(err));
         else {
             i->done = 1;
+            data->write_ok = true;
             kill(data->cgid, SIGINT);
         }
     }
@@ -242,6 +231,7 @@ void catch_z (t_stuff * data) {   // CTL z
             write (data->s_fd, err, strlen(err));
         else {
             i->paused = 1;
+            write (data->s_fd, "\n# ", 3);
             kill(data->cgid, SIGTSTP);
         }
     }
@@ -294,31 +284,63 @@ void reuse_port(int s ){
 void * aux_listen (void * incoming) { // AUXILIARY THREAD
     
     char buf[LINE_MAX];
-    int num;
-    t_incoming * in =  (t_incoming *) incoming;
+    char * tokens[LINE_MAX/3];
+    char * tmp;
+    int count, num;
+    t_incoming * in = (t_incoming *) incoming;
+    bool skip;
 
     for (;;) {
         bzero(buf, LINE_MAX);
+        
         if (in->ready)
             continue;
         else if ( (num = read (in->sckt_fd, buf, LINE_MAX)) < 0 ) {
-            log_thread("ERROR: receiving client msg ", in->data);
+            log_thread ("ERROR: receiving client msg ", in->data);
             break;
         }
         else if (num) {
+            
             buf[num]='\0';
-            pthread_mutex_lock(&in->check_lock);
-            strcpy (in->in_buffer, buf);
-            in->num_read = num;
-            in->ready = true;
-            pthread_mutex_unlock(&in->check_lock);
+            tmp = strdup (buf);
+
+            skip = tokenizer (tmp, tokens, &count, in->sckt_fd); // count = tokens num
+            if ( skip || (tokens[0]==NULL) ) {
+                free (tmp);
+                continue;
+            }
+            
+            if (strncmp(tokens[0], "CTL", 3) == 0) {
+                log_thread (buf, in->data);
+            
+                if (strncmp(tokens[1], "c", 1) == 0)
+                    catch_c (in->data);
+                else if (strncmp(tokens[1], "z", 1) == 0)
+                    catch_z (in->data);     
+                else if (strncmp(tokens[1], "d", 1) == 0) {
+                    in->close = true;
+                    break;
+                }
+                
+                free (tmp);
+                continue;
+            }
+            
+            free (tmp);
+
+            pthread_mutex_lock (&in->check_lock);
+              strcpy (in->in_buffer, buf);
+              in->num_read = num;
+              in->ready = true;
+            pthread_mutex_unlock (&in->check_lock);
         }
         else {    
-            log_thread("ERROR: Disconnected ", in->data);
-            close (in->sckt_fd);
+            log_thread ("ERROR: Disconnected ", in->data);
+            in->close = true;
             break;
         }
     }
     
+    close (in->sckt_fd);
     pthread_exit(NULL);
 }
